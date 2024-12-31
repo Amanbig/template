@@ -186,7 +186,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           BoxShadow(
             color: Colors.white,
             blurRadius: 10,
-            spreadRadius: 1,
+            spreadRadius: 2,
           ),
         ],
       ),
@@ -195,7 +195,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           return Stack(
             children: [
               CustomPaint(
-                size: Size(constraints.maxWidth, 50),
+                size: Size(constraints.maxWidth, 150),
                 painter: WaveformPainter(
                   currentTime: _currentTimeNotifier.value,
                   totalDuration: totalDuration,
@@ -224,16 +224,36 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
     );
   }
 
+
   Widget _buildCropHandles(double containerWidth) {
     return Stack(
       children: [
+        // Left-side overlay
+        Positioned(
+          left: 0,
+          width: (start / totalDuration) * containerWidth,
+          child: Container(
+            height: 50,
+            color: Colors.black.withOpacity(0.3),
+          ),
+        ),
+        // Right-side overlay
+        Positioned(
+          right: 0,
+          width: ((totalDuration - end) / totalDuration) * containerWidth,
+          child: Container(
+            height: 50,
+            color: Colors.black.withOpacity(0.3),
+          ),
+        ),
+        // Start handle
         Positioned(
           left: (start / totalDuration) * containerWidth,
           child: GestureDetector(
             onHorizontalDragUpdate: (details) {
               setState(() {
                 final newStart = start +
-                    (details.delta.dx / containerWidth) * totalDuration;
+                    (details.primaryDelta! / containerWidth) * totalDuration;
                 start = newStart.clamp(0, end - 1);
                 _startController.text = _formatTime(start);
               });
@@ -245,13 +265,14 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
             ),
           ),
         ),
+        // End handle
         Positioned(
-          left: (end / totalDuration) * containerWidth,
+          left: ((end / totalDuration) * containerWidth) - 5,  // Subtract handle width
           child: GestureDetector(
             onHorizontalDragUpdate: (details) {
               setState(() {
                 final newEnd = end +
-                    (details.delta.dx / containerWidth) * totalDuration;
+                    (details.primaryDelta! / containerWidth) * totalDuration;
                 end = newEnd.clamp(start + 1, totalDuration);
                 _endController.text = _formatTime(end);
               });
@@ -268,42 +289,78 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
   }
 
   Widget _buildTimeControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildTimeInput('Start', _startController, true),
-        _buildTimeInput('End', _endController, false),
-        _buildTimeDisplay('Duration', _formatTime(end - start)),
-        _buildPlaybackControls(),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmallScreen = constraints.maxWidth < 300;
+
+          return Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildTimeInput('Start', _startController, true, isSmallScreen),
+                  _buildTimeInput('End', _endController, false, isSmallScreen),
+                  if(!isSmallScreen)_buildTimeDisplay('Duration', _formatTime(end - start)),
+                  if(!isSmallScreen)_buildPlaybackControls(),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if(isSmallScreen)_buildTimeDisplay('Duration', _formatTime(end - start)),
+              const SizedBox(height: 10),
+              if(isSmallScreen)_buildPlaybackControls(),
+            ],
+          );
+        },
+      ),
     );
   }
 
   Widget _buildTimeInput(
-      String label, TextEditingController controller, bool isStart) {
-    return Container(
-      width: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.black, fontSize: 12),
-          ),
-          TextField(
-            controller: controller,
-            style: const TextStyle(color: Colors.black, fontSize: 16),
-            textAlign: TextAlign.center,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+      String label, TextEditingController controller, bool isStart, bool isSmallScreen) {
+    final double width = isSmallScreen ? 50 : 70; // Adjust width for smaller screens
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+        width: width,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '$label:',
+              style: const TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
-            onSubmitted: (_) => _updateTimeFromText(isStart),
-          ),
-        ],
+            TextField(
+              controller: controller,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.datetime,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+              ),
+              onSubmitted: (_) => _updateTimeFromText(isStart),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -317,8 +374,12 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       child: Column(
         children: [
           Text(
-            label,
-            style: const TextStyle(color: Colors.black, fontSize: 12),
+            '$label:',
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -326,7 +387,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 14,
             ),
           ),
         ],
@@ -340,32 +401,34 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       children: [
         GestureDetector(
           onTap: _playPauseMusic,
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isPlaying ? Icons.pause : Icons.play_arrow,
-                  size: 40,
-                  color: Colors.black,
+          child: Row(
+            children: [
+              Icon(
+                isPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                size: 30,
+                color: Colors.black,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                !isPlaying ? 'Play' : 'Pause',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-                Text(!isPlaying ? 'Play' : 'Pause'),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
+
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
+      spacing: 14,
       children: [
         TextButton(
           onPressed: () {
@@ -387,6 +450,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.arrow_back, color: Colors.grey[800]),
+              SizedBox(width: 4,),
               Text('Back',
                   style: TextStyle(
                     color: Colors.grey[800],
@@ -435,80 +499,32 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey[600]!
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+      ..color = Colors.black
+      ..strokeWidth = 2.5;
 
-    final activePaint = Paint()
-      ..color = Colors.blue[400]!
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+    final random = Random();
+    final lineCount = 100; // Number of vertical lines (waveform resolution)
+    final lineWidth = size.width / lineCount;
+    final centerY = size.height / 2;
 
-    final selectedPaint = Paint()
-      ..color = Colors.lightBlueAccent
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+    for (int i = 0; i < lineCount; i++) {
+      final x = i * lineWidth;
 
-    final playheadPaint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+      // Generate a random "frequency" for the line (simulate waveform)
+      final frequency = random.nextDouble() * 2 - 1; // Random value between -1 and 1
 
-    final path = Path();
-    final activePath = Path();
-    final selectedPath = Path();
+      // Calculate the height of the line based on frequency, but keep it centered
+      final lineHeight = frequency * size.height / 2;
 
-    for (var i = 0; i < size.width; i++) {
-      final x = i.toDouble();
-      final progress = i / size.width;
-      final timeAtPoint = progress * totalDuration;
-      final amplitude = _generateRandomAmplitude(timeAtPoint);
-      final y = size.height / 2 + 30 * amplitude * sin(progress * 50);
-
-      if (i == 0) {
-        path.moveTo(x, y);
-        activePath.moveTo(x, y);
-        selectedPath.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-        activePath.lineTo(x, y);
-        selectedPath.lineTo(x, y);
-      }
+      // Draw the waveform line centered around the middle of the canvas
+      canvas.drawLine(
+        Offset(x, centerY - lineHeight), // Start point (above center)
+        Offset(x, centerY + lineHeight), // End point (below center)
+        paint,
+      );
     }
-
-    // Draw inactive waveform
-    canvas.drawPath(path, paint);
-
-    // Draw active region
-    canvas.save();
-    canvas.clipRect(
-      Rect.fromLTRB(
-        (start / totalDuration) * size.width,
-        0,
-        (end / totalDuration) * size.width,
-        size.height,
-      ),
-    );
-    canvas.drawPath(selectedPath, selectedPaint);
-    canvas.restore();
-
-    // Draw current position line
-    final playheadX = (currentTime / totalDuration) * size.width;
-    canvas.drawLine(
-      Offset(playheadX, 0),
-      Offset(playheadX, size.height),
-      playheadPaint,
-    );
-  }
-
-  double _generateRandomAmplitude(double seed) {
-    final randomValue = (sin(seed * 5) * 0.5 + 0.5) * 0.8 + 0.2;
-    return min(1.0, max(0.2, randomValue));
   }
 
   @override
-  bool shouldRepaint(WaveformPainter oldDelegate) =>
-      currentTime != oldDelegate.currentTime ||
-          start != oldDelegate.start ||
-          end != oldDelegate.end;
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }

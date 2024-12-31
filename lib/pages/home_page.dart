@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:template/components/drop_down.dart';
 import 'package:template/components/home_page_buttons.dart';
 import 'package:template/pages/crop_page.dart';
@@ -21,6 +23,23 @@ class _HomePageState extends State<HomePage> {
   void setAudio(double start, double end) {
     widget.start = start;
     widget.end = end;
+  }
+
+  String url = '';
+
+
+  Future<String> getFilePath() async {
+    // Get the app's document directory (platform-specific)
+    final directory = await getApplicationDocumentsDirectory();
+
+    // Return the full file path in the app's documents folder
+    return directory.path;  // You can append file name if needed
+  }
+
+  Future<void> updatePath(String path) async {
+    setState(() {
+      url = path;
+    });
   }
 
   void updateDropDown(bool dropdown) {
@@ -88,7 +107,7 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 14,
                         ),
                       ),
-                      DropDown(updateDropDown: updateDropDown, isDropdownVisible: _isDropdownVisible),
+                      DropDown(updateDropDown: updateDropDown, isDropdownVisible: _isDropdownVisible, updatePath: updatePath,),
                     ],
                   ),
                 ),
@@ -96,7 +115,8 @@ class _HomePageState extends State<HomePage> {
                     ? HomePageButtons(
                   setAudio: setAudio,
                   name: 'hello',
-                  url: 'hello', // Removed null coalescing
+                  url: url,
+                  // Removed null coalescing
                 )
                     : Container(),
               ],

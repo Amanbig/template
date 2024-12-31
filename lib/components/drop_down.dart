@@ -1,9 +1,12 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 class DropDown extends StatefulWidget {
   bool isDropdownVisible;
   final void Function(bool) updateDropDown;
-  DropDown({super.key, required this.isDropdownVisible, required this.updateDropDown});
+  final void Function(String) updatePath;
+
+  DropDown({super.key, required this.isDropdownVisible, required this.updateDropDown, required this.updatePath});
 
   @override
   State<DropDown> createState() => _DropDownState();
@@ -19,6 +22,16 @@ class _DropDownState extends State<DropDown> {
     'Music 5',
   ];
   String selectedMusic = 'Music 1';
+
+  Future<void> pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.isNotEmpty) {
+      String? path = result.files.single.path;
+      if (path != null) {
+        widget.updatePath(path);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +94,13 @@ class _DropDownState extends State<DropDown> {
                   return InkWell(
                     onTap: () {
                       setState(() {
-                        selectedMusic = item;
+                        if (index == 0) {
+                          pickFile();
+                          selectedMusic = 'New Audio';
+                          musicList.insert(1, selectedMusic);
+                        } else {
+                          selectedMusic = item;
+                        }
                         widget.isDropdownVisible = false;
                         widget.updateDropDown(widget.isDropdownVisible);
                       });
@@ -90,15 +109,18 @@ class _DropDownState extends State<DropDown> {
                       padding: const EdgeInsets.all(12.0),
                       child: Row(
                         children: [
-                          index==0 ? Icon(Icons.upload):Icon(Icons.play_circle_outlined),
-                          SizedBox(width: 2,),
-                          index==0 ?Text(
+                          index == 0
+                              ? Icon(Icons.upload)
+                              : Icon(Icons.play_circle_outlined),
+                          SizedBox(width: 2),
+                          index == 0
+                              ? Text(
                             item,
                             style: TextStyle(
                               color: Colors.green,
                             ),
                           )
-                              :Text(item),
+                              : Text(item),
                         ],
                       ),
                     ),
