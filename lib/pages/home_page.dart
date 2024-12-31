@@ -1,165 +1,104 @@
+import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:template/components/drop_down.dart';
+import 'package:template/components/home_page_buttons.dart';
+import 'package:template/pages/crop_page.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({super.key});
 
-  List<String> musicList = [
-    'Music 1',
-    'Music 2',
-    'Music 3',
-    'Music 4',
-    'Music 5',
-  ];
-  String selectedMusic = 'Music 1';
+  double start = 0;
+  double end = 0;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _isDropdownVisible = false;
+
+  void setAudio(double start, double end) {
+    widget.start = start;
+    widget.end = end;
+  }
+
+  void updateDropDown(bool dropdown) {
+    setState(() {
+      _isDropdownVisible = dropdown;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            'Video Music Details',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-              fontFamily: 'Times New Roman',
-            ),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        leading: Icon(Icons.arrow_back),
-      ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 15,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Icon(Icons.arrow_back),
                 Text(
-                  'Total Video Duraction: 3:45',
-                ),
-                Text(
-                  'Total Music Duraction: 3:45',
-                ),
-                Text(
-                  'Selected Music:',
-                ),
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        spreadRadius: 2,
-                        blurRadius: 5,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton(
-                      elevation: 16,
-                      onChanged: (value) => setState(() {
-                        widget.selectedMusic = value.toString();
-                      }),
-                      items: widget.musicList.map((String value) {
-                        return DropdownMenuItem(
-                          value: value,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(value),
-                          ),
-                        );
-                      }).toList(),
-                      value: widget.selectedMusic,
-                      icon: Visibility(
-                          visible: false, child: Icon(Icons.arrow_downward)),
-                    ),
+                  'Video Music Details',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    fontFamily: 'Times New Roman',
                   ),
                 ),
-                Container(
-                  alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: () => {},
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Icon(Icons.music_note),
-                            Text('Crop Music',
-                            style: TextStyle(
-                            color: Colors.grey[800],
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                            fontFamily: 'Times New Roman',
-                            decoration: TextDecoration.underline,
-                            )),
-                      ],
-                    ),
-                  ),
-                )
+                SizedBox(
+                  width: 22,
+                ),
               ],
             ),
           ),
-          Container(
-            width: double.infinity,
+          Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              spacing: 14,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ElevatedButton(
-                  onPressed: () {},
-                  child: Text(
-                    'Save Video',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                  style: ButtonStyle(
-                    backgroundColor:
-                        MaterialStateProperty.all(Colors.grey[800]),
-                    fixedSize: MaterialStateProperty.all(Size(250, 45)),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: Text('Save',
-                      style: TextStyle(
-                        color: Colors.grey[800],
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        fontFamily: 'Times New Roman',
-                      )),
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Colors.white),
-                    fixedSize: MaterialStateProperty.all(Size(250, 45)),
-                    side: MaterialStateProperty.all(
-                      BorderSide(
-                        color: Colors.black,
-                        width: 2,
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 25,
+                    children: [
+                      Text(
+                        'Total Video Duration: 3:45',
+                        style: TextStyle(
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
+                      Text(
+                        'Total Music Duration: 3:45',
+                        style: TextStyle(
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        'Selected Music:',
+                        style: TextStyle(
+                          fontSize: 14,
+                        ),
+                      ),
+                      DropDown(updateDropDown: updateDropDown, isDropdownVisible: _isDropdownVisible),
+                    ],
                   ),
                 ),
+                !_isDropdownVisible
+                    ? HomePageButtons(
+                  setAudio: setAudio,
+                  name: 'hello',
+                  url: 'hello', // Removed null coalescing
+                )
+                    : Container(),
               ],
             ),
           ),

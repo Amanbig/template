@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:template/pages/crop_page.dart';
 import 'package:template/pages/home_page.dart';
@@ -19,7 +21,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: CropPage(name:'hello',url:'one'),
+      home: HomePage(),
     );
   }
 }
