@@ -12,9 +12,11 @@ class DropDown extends StatelessWidget {
   const DropDown({Key? key}) : super(key: key);
 
   String generateRandomFileName() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     Random rand = Random();
-    String randomString = List.generate(10, (index) => chars[rand.nextInt(chars.length)]).join();
+    String randomString =
+        List.generate(10, (index) => chars[rand.nextInt(chars.length)]).join();
     return 'audio_$randomString.mp3';
   }
 
@@ -43,11 +45,12 @@ class DropDown extends StatelessWidget {
 
         // Update selected music to the new one
         context.read<MusicState>().updateSelectedMusic(newMusic);
-        context.read<MusicState>().toggleDropdownVisibility();  // Close dropdown after file pick
+        context
+            .read<MusicState>()
+            .toggleDropdownVisibility(); // Close dropdown after file pick
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -109,25 +112,41 @@ class DropDown extends StatelessWidget {
                       return TextButton(
                         onPressed: () async {
                           if (index == 0) {
-                            await pickFile(context); // If it's the "Upload your own music", open file picker
+                            await pickFile(
+                                context); // If it's the "Upload your own music", open file picker
                           } else {
-                            musicState.updateSelectedMusic(item); // Update selected music
+                            musicState.updateSelectedMusic(
+                                item); // Update selected music
                           }
-                          musicState.toggleDropdownVisibility(); // Close dropdown
+                          musicState
+                              .toggleDropdownVisibility(); // Close dropdown
                         },
-                        child: Row(
-                          children: [
-                            index == 0
-                                ? const Icon(Icons.upload)
-                                : const Icon(Icons.play_circle_outlined),
-                            const SizedBox(width: 8),
-                            Text(
-                              item.name,
-                              style: TextStyle(
-                                color: index == 0 ? Colors.green : Colors.black,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              index == 0
+                                  ? const Icon(
+                                      Icons.upload_outlined,
+                                      color: Colors.black,
+                                    )
+                                  : const Icon(
+                                      Icons.play_circle_outlined,
+                                      color: Colors.black,
+                                    ),
+                              const SizedBox(width: 8),
+                              Text(
+                                item.name,
+                                style: TextStyle(
+                                    color: index == 0
+                                        ? Colors.green
+                                        : Colors.black,
+                                    decoration: index == 0
+                                        ? TextDecoration.underline
+                                        : TextDecoration.none),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },
