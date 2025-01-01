@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,6 +10,13 @@ import 'package:template/models/music_provider.dart';
 
 class DropDown extends StatelessWidget {
   const DropDown({Key? key}) : super(key: key);
+
+  String generateRandomFileName() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    Random rand = Random();
+    String randomString = List.generate(10, (index) => chars[rand.nextInt(chars.length)]).join();
+    return 'audio_$randomString.mp3';
+  }
 
   // Method to pick a file and update the audio path
   Future<void> pickFile(BuildContext context) async {
@@ -28,8 +36,9 @@ class DropDown extends StatelessWidget {
         // Update the path in the MusicState provider
         context.read<MusicState>().updateAudioPath(newPath);
 
-        // Add the new music dynamically to the list
-        MusicModel newMusic = MusicModel(name: 'New Audio', url: newPath);
+        String randomFileName = generateRandomFileName();
+        MusicModel newMusic = MusicModel(name: randomFileName, url: newPath);
+
         context.read<MusicState>().addMusic(newMusic);
 
         // Update selected music to the new one
@@ -106,22 +115,19 @@ class DropDown extends StatelessWidget {
                           }
                           musicState.toggleDropdownVisibility(); // Close dropdown
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            children: [
-                              index == 0
-                                  ? const Icon(Icons.upload)
-                                  : const Icon(Icons.play_circle_outlined),
-                              const SizedBox(width: 8),
-                              Text(
-                                item.name,
-                                style: TextStyle(
-                                  color: index == 0 ? Colors.green : Colors.black,
-                                ),
+                        child: Row(
+                          children: [
+                            index == 0
+                                ? const Icon(Icons.upload)
+                                : const Icon(Icons.play_circle_outlined),
+                            const SizedBox(width: 8),
+                            Text(
+                              item.name,
+                              style: TextStyle(
+                                color: index == 0 ? Colors.green : Colors.black,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       );
                     },

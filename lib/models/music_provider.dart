@@ -43,7 +43,7 @@ class MusicState with ChangeNotifier {
 
   // Method to add new music to the list
   void addMusic(MusicModel music) {
-    _musicList.add(music);
+    _musicList.insert(1,music);
     notifyListeners(); // Notify listeners to rebuild
   }
 
