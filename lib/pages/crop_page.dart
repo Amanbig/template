@@ -40,6 +40,21 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
   }
 
   void _initAudioPlayer() async {
+    final fileUri = Uri.file(
+            Provider.of<MusicState>(context, listen: false).selectedMusic.url)
+        .toString();
+
+    // Preload the audio to get the duration
+    await _audioPlayer.setSource(DeviceFileSource(fileUri));
+
+    _audioPlayer.onDurationChanged.listen((Duration d) {
+      setState(() {
+        totalDuration = d.inMilliseconds.toDouble() / 1000;
+        end = min(totalDuration, end);
+        _endController.text = _formatTime(end);
+      });
+    });
+
     _audioPlayer.onPositionChanged.listen((Duration p) {
       _currentTimeNotifier.value = p.inMilliseconds.toDouble() / 1000;
       currentTime = _currentTimeNotifier.value;
@@ -51,13 +66,16 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       }
     });
 
-    _audioPlayer.onDurationChanged.listen((Duration d) {
+    // Fetch and set the total duration after preloading
+    final duration = await _audioPlayer.getDuration();
+    if (duration != null) {
       setState(() {
-        totalDuration = d.inMilliseconds.toDouble() / 1000;
-        end = min(totalDuration, end);
+        totalDuration = duration.inMilliseconds.toDouble() / 1000;
+        end = totalDuration;
+        _startController.text = _formatTime(start);
         _endController.text = _formatTime(end);
       });
-    });
+    }
   }
 
 
