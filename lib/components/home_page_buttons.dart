@@ -1,21 +1,22 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:template/models/music_provider.dart';
 import 'package:template/pages/crop_page.dart';
 
 class HomePageButtons extends StatelessWidget {
   final Function setAudio;
-  final String? name;
-  final String? url;
 
   HomePageButtons({
     super.key,
     required this.setAudio,
-    required this.name,
-    required this.url,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Access selected music from MusicState provider
+    final selectedMusic = context.watch<MusicState>().selectedMusic;
+
     return Column(
       children: [
         // Crop Music Button
@@ -23,13 +24,11 @@ class HomePageButtons extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () {
+              // Pass selected music data to AudioCropperPage
               Navigator.push(
                 context,
                 CupertinoPageRoute(
                   builder: (context) => AudioCropperPage(
-                    name: name!,
-                    setAudio: setAudio,
-                    url: url!,
                   ),
                 ),
               );

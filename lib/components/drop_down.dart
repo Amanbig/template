@@ -1,148 +1,137 @@
-import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:template/models/MusicModel.dart';
+import 'package:template/models/music_provider.dart';
 
-class DropDown extends StatefulWidget {
-  final bool isDropdownVisible;
-  final void Function(bool) updateDropDown;
-  final void Function(String) updatePath;
+class DropDown extends StatelessWidget {
+  const DropDown({Key? key}) : super(key: key);
 
-  const DropDown({
-    Key? key,
-    required this.isDropdownVisible,
-    required this.updateDropDown,
-    required this.updatePath,
-  }) : super(key: key);
-
-  @override
-  State<DropDown> createState() => _DropDownState();
-}
-
-class _DropDownState extends State<DropDown> {
-  List<String> musicList = [
-    'Upload your own music',
-    'Music 1',
-    'Music 2',
-    'Music 3',
-    'Music 4',
-    'Music 5',
-  ];
-  String selectedMusic = 'Music 1';
-  bool isDropdownVisible = false;
-
-  @override
-  void initState() {
-    super.initState();
-    isDropdownVisible = widget.isDropdownVisible;
-  }
-
-  Future<void> pickFile() async {
+  // Method to pick a file and update the audio path
+  Future<void> pickFile(BuildContext context) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
     if (result != null && result.files.isNotEmpty) {
       String? path = result.files.single.path;
       if (path != null) {
-        widget.updatePath(path);
-        setState(() {
-          selectedMusic = 'New Audio';
-          musicList.insert(1, selectedMusic); // Add the new audio dynamically.
-        });
+        // Log the original path
+        print("Picked file path: $path");
+
+        // Copy the file to a permanent location
+        Directory appDocDir = await getApplicationDocumentsDirectory();
+        String newPath = '${appDocDir.path}/${result.files.single.name}';
+        File pickedFile = File(path);
+        File newFile = await pickedFile.copy(newPath);
+
+        // Update the path in the MusicState provider
+        context.read<MusicState>().updateAudioPath(newPath);
+
+        // Add the new music dynamically to the list
+        MusicModel newMusic = MusicModel(name: 'New Audio', url: newPath);
+        context.read<MusicState>().addMusic(newMusic);
+
+        // Update selected music to the new one
+        context.read<MusicState>().updateSelectedMusic(newMusic);
+        context.read<MusicState>().toggleDropdownVisibility();  // Close dropdown after file pick
       }
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              isDropdownVisible = !isDropdownVisible;
-              widget.updateDropDown(isDropdownVisible);
-            });
-          },
-          child: Container(
-            width: double.infinity,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  spreadRadius: 2,
-                  blurRadius: 3,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-              border: Border.all(
-                color: Colors.grey,
-                width: 1.0,
-              ),
-              borderRadius: BorderRadius.circular(2),
-            ),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(selectedMusic),
-          ),
-        ),
-        Visibility(
-          visible: isDropdownVisible,
-          child: Container(
-            margin: const EdgeInsets.only(top: 5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  spreadRadius: 2,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: SizedBox(
-              height: 250, // Limit the height of the dropdown
-              child: ListView.builder(
-                itemCount: musicList.length,
-                itemBuilder: (context, index) {
-                  final item = musicList[index];
-                  return TextButton(
-                    onPressed: () async {
-                      if (index == 0) {
-                        await pickFile();
-                      } else {
-                        setState(() {
-                          selectedMusic = item;
-                        });
-                      }
-                      isDropdownVisible = false;
-                      widget.updateDropDown(isDropdownVisible);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Row(
-                        children: [
-                          index == 0
-                              ? const Icon(Icons.upload)
-                              : const Icon(Icons.play_circle_outlined),
-                          const SizedBox(width: 8),
-                          Text(
-                            item,
-                            style: TextStyle(
-                              color: index == 0 ? Colors.green : Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
+    return Consumer<MusicState>(
+      builder: (context, musicState, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                musicState.toggleDropdownVisibility();
+              },
+              child: Container(
+                width: double.infinity,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      spreadRadius: 2,
+                      blurRadius: 3,
+                      offset: const Offset(0, 2),
                     ),
-                  );
-                },
+                  ],
+                  border: Border.all(
+                    color: Colors.grey,
+                    width: 1.0,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(musicState.selectedMusic.name),
               ),
             ),
-          ),
-        ),
-      ],
+            Visibility(
+              visible: musicState.isDropdownVisible,
+              child: Container(
+                margin: const EdgeInsets.only(top: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      spreadRadius: 2,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: SizedBox(
+                  height: 250, // Limit the height of the dropdown
+                  child: ListView.builder(
+                    itemCount: musicState.musicList.length,
+                    itemBuilder: (context, index) {
+                      final MusicModel item = musicState.musicList[index];
+                      return TextButton(
+                        onPressed: () async {
+                          if (index == 0) {
+                            await pickFile(context); // If it's the "Upload your own music", open file picker
+                          } else {
+                            musicState.updateSelectedMusic(item); // Update selected music
+                          }
+                          musicState.toggleDropdownVisibility(); // Close dropdown
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            children: [
+                              index == 0
+                                  ? const Icon(Icons.upload)
+                                  : const Icon(Icons.play_circle_outlined),
+                              const SizedBox(width: 8),
+                              Text(
+                                item.name,
+                                style: TextStyle(
+                                  color: index == 0 ? Colors.green : Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

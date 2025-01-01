@@ -1,51 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'package:provider/provider.dart';  // Import provider
 import 'package:template/components/drop_down.dart';
 import 'package:template/components/home_page_buttons.dart';
+  // Import your MusicModel class
+import 'package:template/models/music_provider.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   HomePage({super.key});
-
-  double start = 0;
-  double end = 0;
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  bool _isDropdownVisible = false;
-
-  void setAudio(String url) {
-    updatePath(url);
-  }
-
-  String url = '';
-
-
-  Future<String> getFilePath() async {
-    // Get the app's document directory (platform-specific)
-    final directory = await getApplicationDocumentsDirectory();
-
-    // Return the full file path in the app's documents folder
-    return directory.path;  // You can append file name if needed
-  }
-
-  Future<void> updatePath(String path) async {
-    setState(() {
-      url = path;
-    });
-  }
-
-  void updateDropDown(bool dropdown) {
-    setState(() {
-      _isDropdownVisible = dropdown;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Access the MusicState using Consumer
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -98,23 +65,22 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       Text(
-                        'Selected Music:',
+                        'Selected Music: ${context.watch<MusicState>().selectedMusic.name}',  // Watch the selected music from provider
                         style: TextStyle(
                           fontSize: 14,
                         ),
                       ),
-                      DropDown(updateDropDown: updateDropDown, isDropdownVisible: _isDropdownVisible, updatePath: updatePath,),
+                      DropDown(),
                     ],
                   ),
                 ),
-                !_isDropdownVisible
+                !context.watch<MusicState>().isDropdownVisible
                     ? HomePageButtons(
-                  setAudio: setAudio,
-                  name: 'hello',
-                  url: url,
-                  // Removed null coalescing
-                )
+                  setAudio: (url) {
+                    context.read<MusicState>().updateAudioPath(url);  // Set audio path through provider
+                  },)
                     : Container(),
+
               ],
             ),
           ),

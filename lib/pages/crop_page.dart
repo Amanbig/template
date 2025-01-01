@@ -6,13 +6,13 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:template/models/MusicModel.dart';
+import 'package:template/models/music_provider.dart';
 
 class AudioCropperPage extends StatefulWidget {
-  final String url;
-  final String name;
-  var setAudio;
 
-  AudioCropperPage({super.key, required this.url, required this.name, required this.setAudio});
+  AudioCropperPage({super.key});
 
   @override
   State<AudioCropperPage> createState() => _AudioCropperPageState();
@@ -61,20 +61,28 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
   }
 
 
-  void _cropAndSaveAudio() async {
+  void _cropAndSaveAudio(BuildContext context) async {
     try {
+      final musicState = Provider.of<MusicState>(context, listen: false);
+      final selectedMusic = musicState.selectedMusic;
+
       // Get a directory to save the cropped file
       final directory = await getApplicationDocumentsDirectory();
-      final outputPath = '${directory.path}/${widget.name}(cropped).mp3';
+      final outputPath = '${directory.path}/${selectedMusic.name}(cropped).mp3';
 
       // Build the FFmpeg command
       final command = [
-        '-i', widget.url,        // Input file
-        '-ss', start.toString(), // Start time in seconds
-        '-to', end.toString(),   // End time in seconds
-        '-c', 'copy',            // Avoid re-encoding for faster processing
-        outputPath               // Output file path
+        '-i', '"${selectedMusic.url}"',  // Input file with quotes for spaces or special chars
+        '-ss', start.toString(),         // Start time in seconds
+        '-to', end.toString(),           // End time in seconds
+        '-c', 'copy',                    // Avoid re-encoding for faster processing
+        '"$outputPath"'                  // Output file path with quotes
       ];
+
+      print('Selected audio file path: ${selectedMusic.url}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Selected audio file path: ${selectedMusic.url}')),
+      );
 
       // Execute the FFmpeg command
       await FFmpegKit.execute(command.join(' ')).then((session) async {
@@ -85,9 +93,10 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Cropped audio saved at $outputPath')),
           );
-
-          // Call the callback with the saved file path
-          widget.setAudio(outputPath);
+          musicState.updateAudioPath(outputPath);
+          musicState.updateSelectedMusic(
+            MusicModel(name: '${selectedMusic.name}(cropped)', url: outputPath),
+          );
         } else {
           // Handle errors
           final failMessage = await session.getFailStackTrace();
@@ -96,6 +105,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           );
         }
       });
+
     } catch (e) {
       // Handle any errors
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,8 +113,6 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       );
     }
   }
-
-
 
   void _updateTimeFromText(bool isStart) {
     try {
@@ -145,7 +153,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
     if (isPlaying) {
       await _audioPlayer.pause();
     } else {
-      final fileUri = Uri.file(widget.url).toString();
+      final fileUri = Uri.file(Provider.of<MusicState>(context, listen: false).selectedMusic.url).toString();
       await _audioPlayer.play(DeviceFileSource(fileUri));
       await _audioPlayer.seek(Duration(milliseconds: (start * 1000).toInt()));
     }
@@ -159,6 +167,9 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
 
   @override
   Widget build(BuildContext context) {
+    final musicState = Provider.of<MusicState>(context);
+    final selectedMusic = musicState.selectedMusic;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -168,7 +179,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
             Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
-                'Song Name: ${widget.name}',
+                'Song Name: ${selectedMusic.name}',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 24,
@@ -525,7 +536,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           ),
         ),
         ElevatedButton(
-          onPressed:  _cropAndSaveAudio,
+          onPressed:()=>  _cropAndSaveAudio(context),
           style: ButtonStyle(
             backgroundColor: MaterialStateProperty.all(Colors.grey[800]),
             fixedSize: MaterialStateProperty.all(Size(250, 45)),
