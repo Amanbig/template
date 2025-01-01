@@ -1,7 +1,10 @@
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:path_provider/path_provider.dart';
 
 class AudioCropperPage extends StatefulWidget {
   final String url;
@@ -55,6 +58,45 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       });
     });
   }
+
+
+  void _cropAndSaveAudio() async {
+    try {
+      // Get a directory to save the cropped file
+      final directory = await getApplicationDocumentsDirectory();
+      final outputPath = '${directory.path}/${widget.name}_cropped.mp3';
+
+      // Build the FFmpeg command
+      final command = [
+        '-i',
+        widget.url, // Input file
+        '-ss',
+        start.toString(), // Start time in seconds
+        '-to',
+        end.toString(), // End time in seconds
+        '-c',
+        'copy', // Avoid re-encoding for faster processing
+        outputPath // Output file path
+      ].join(' ');
+
+      // Execute FFmpeg command
+      await FFmpegKit.execute(command);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cropped audio saved at $outputPath')),
+      );
+
+      // Optionally, pass the output file path to a callback
+      widget.setAudio(outputPath);
+    } catch (e) {
+      // Handle errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save cropped audio: $e')),
+      );
+    }
+  }
+
 
   void _updateTimeFromText(bool isStart) {
     try {
@@ -181,7 +223,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       height: 50,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black, width: 2),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
         boxShadow: [
           BoxShadow(
             color: Colors.white,
@@ -197,10 +239,10 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
               CustomPaint(
                 size: Size(constraints.maxWidth, 150),
                 painter: WaveformPainter(
-                  currentTime: _currentTimeNotifier.value,
-                  totalDuration: totalDuration,
-                  start: start,
-                  end: end,
+                  currentTime: 0.0,
+                  totalDuration: 100.0,
+                  start: 0.0,
+                  end: 100.0,
                 ),
               ),
               _buildCropHandles(constraints.maxWidth),
@@ -259,7 +301,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
               });
             },
             child: Container(
-              width: 5,
+              width: 8,
               height: 50,
               color: Colors.black,
             ),
@@ -278,7 +320,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
               });
             },
             child: Container(
-              width: 5,
+              width: 8,
               height: 50,
               color: Colors.black,
             ),
@@ -346,7 +388,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
-              keyboardType: TextInputType.datetime,
+              keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
@@ -403,17 +445,28 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           onTap: _playPauseMusic,
           child: Row(
             children: [
-              Icon(
-                isPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline,
-                size: 30,
-                color: Colors.black,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return ScaleTransition(scale: animation, child: child);
+                },
+                child: Icon(
+                  isPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                  key: ValueKey<bool>(isPlaying),
+                  size: 30, // Ensure consistent size
+                  color: Colors.black,
+                ),
               ),
               const SizedBox(width: 5),
-              Text(
-                !isPlaying ? 'Play' : 'Pause',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Text(
+                  !isPlaying ? 'Play' : 'Pause',
+                  key: ValueKey<bool>(isPlaying),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -422,6 +475,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       ],
     );
   }
+
 
 
   Widget _buildActionButtons() {
@@ -463,7 +517,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           ),
         ),
         ElevatedButton(
-          onPressed: () {},
+          onPressed:  _cropAndSaveAudio,
           style: ButtonStyle(
             backgroundColor: MaterialStateProperty.all(Colors.grey[800]),
             fixedSize: MaterialStateProperty.all(Size(250, 45)),
@@ -483,11 +537,22 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
   }
 }
 
+
 class WaveformPainter extends CustomPainter {
   final double currentTime;
   final double totalDuration;
   final double start;
   final double end;
+
+  // Fixed waveform values to create a static pattern
+  final List<double> _waveformValues = [
+    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,  // First wave
+    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4,  // Second wave
+    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,  // Third wave
+    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4,  // Fourth wave
+    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,  // Fifth wave
+    // Repeat the pattern to fill 100 points
+  ].expand((x) => [x, x]).take(100).toList();
 
   WaveformPainter({
     required this.currentTime,
@@ -502,29 +567,32 @@ class WaveformPainter extends CustomPainter {
       ..color = Colors.black
       ..strokeWidth = 2.5;
 
-    final random = Random();
-    final lineCount = 100; // Number of vertical lines (waveform resolution)
+    final lineCount = 100; // Number of vertical lines
     final lineWidth = size.width / lineCount;
     final centerY = size.height / 2;
 
+    // Draw the waveform using the fixed pattern
     for (int i = 0; i < lineCount; i++) {
       final x = i * lineWidth;
 
-      // Generate a random "frequency" for the line (simulate waveform)
-      final frequency = random.nextDouble() * 2 - 1; // Random value between -1 and 1
+      // Use the pre-defined static height factor
+      final amplitude = _waveformValues[i];
 
-      // Calculate the height of the line based on frequency, but keep it centered
-      final lineHeight = frequency * size.height / 2;
+      // Calculate the height of the line
+      final lineHeight = amplitude * size.height / 2;
 
-      // Draw the waveform line centered around the middle of the canvas
+      // Draw the waveform line
       canvas.drawLine(
-        Offset(x, centerY - lineHeight), // Start point (above center)
-        Offset(x, centerY + lineHeight), // End point (below center)
+        Offset(x, centerY - lineHeight),
+        Offset(x, centerY + lineHeight),
         paint,
       );
     }
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
+
+
+
