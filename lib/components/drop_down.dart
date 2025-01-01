@@ -107,17 +107,17 @@ class _DropDownState extends State<DropDown> {
                 itemCount: musicList.length,
                 itemBuilder: (context, index) {
                   final item = musicList[index];
-                  return InkWell(
-                    onTap: () async {
+                  return TextButton(
+                    onPressed: () async {
                       if (index == 0) {
                         await pickFile();
                       } else {
                         setState(() {
                           selectedMusic = item;
-                          isDropdownVisible = false;
-                          widget.updateDropDown(isDropdownVisible);
                         });
                       }
+                      isDropdownVisible = false;
+                      widget.updateDropDown(isDropdownVisible);
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),

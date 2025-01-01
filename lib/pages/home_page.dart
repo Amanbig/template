@@ -1,11 +1,8 @@
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:template/components/drop_down.dart';
 import 'package:template/components/home_page_buttons.dart';
-import 'package:template/pages/crop_page.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({super.key});
@@ -20,9 +17,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isDropdownVisible = false;
 
-  void setAudio(double start, double end) {
-    widget.start = start;
-    widget.end = end;
+  void setAudio(String url) {
+    updatePath(url);
   }
 
   String url = '';

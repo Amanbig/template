@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -64,38 +65,45 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
     try {
       // Get a directory to save the cropped file
       final directory = await getApplicationDocumentsDirectory();
-      final outputPath = '${directory.path}/${widget.name}_cropped.mp3';
+      final outputPath = '${directory.path}/${widget.name}(cropped).mp3';
 
       // Build the FFmpeg command
       final command = [
-        '-i',
-        widget.url, // Input file
-        '-ss',
-        start.toString(), // Start time in seconds
-        '-to',
-        end.toString(), // End time in seconds
-        '-c',
-        'copy', // Avoid re-encoding for faster processing
-        outputPath // Output file path
-      ].join(' ');
+        '-i', widget.url,        // Input file
+        '-ss', start.toString(), // Start time in seconds
+        '-to', end.toString(),   // End time in seconds
+        '-c', 'copy',            // Avoid re-encoding for faster processing
+        outputPath               // Output file path
+      ];
 
-      // Execute FFmpeg command
-      await FFmpegKit.execute(command);
+      // Execute the FFmpeg command
+      await FFmpegKit.execute(command.join(' ')).then((session) async {
+        final returnCode = await session.getReturnCode();
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cropped audio saved at $outputPath')),
-      );
+        if (ReturnCode.isSuccess(returnCode)) {
+          // File saved successfully
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Cropped audio saved at $outputPath')),
+          );
 
-      // Optionally, pass the output file path to a callback
-      widget.setAudio(outputPath);
+          // Call the callback with the saved file path
+          widget.setAudio(outputPath);
+        } else {
+          // Handle errors
+          final failMessage = await session.getFailStackTrace();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to crop audio: $failMessage')),
+          );
+        }
+      });
     } catch (e) {
-      // Handle errors
+      // Handle any errors
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save cropped audio: $e')),
+        SnackBar(content: Text('Error: $e')),
       );
     }
   }
+
 
 
   void _updateTimeFromText(bool isStart) {
