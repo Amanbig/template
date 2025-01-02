@@ -172,6 +172,8 @@ class DropDown extends ConsumerWidget {
                           decoration: index == 0
                             ? TextDecoration.underline
                             : TextDecoration.none,
+                          decorationColor:
+                              index == 0 ? Colors.green : Colors.transparent,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
