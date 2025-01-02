@@ -78,11 +78,16 @@ class MusicState extends StateNotifier<MusicStateModel> {
 
   // Add new music
   void addMusic(MusicModel music) {
-    final updatedList = List<MusicModel>.from(state.musicList)..insert(1, music);
-    state = state.copyWith(
-      musicList: updatedList,
-    );
+    // Check if the music is already in the list using the custom equality
+    if (!state.musicList.contains(music)) {
+      final updatedList = List<MusicModel>.from(state.musicList)..insert(1, music);
+      state = state.copyWith(
+        musicList: updatedList,
+      );
+    }
   }
+
+
 
   // Remove music
   void removeMusic(MusicModel music) {

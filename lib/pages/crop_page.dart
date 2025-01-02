@@ -119,17 +119,20 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             final updatedMusic = MusicModel(
               name: selectedMusic.name.contains('(cropped)')
                   ? selectedMusic.name
-                  : '${selectedMusic.name}(cropped)', // Only append "(cropped)" if not already present
+                  : selectedMusic.name.replaceAll('.mp3', '(cropped).mp3'), // Only append "(cropped)" if not already present
               url: outputPath,
               base64Data: base64String, // Include base64-encoded data
             );
 
             musicState.updateAudioPath(outputPath);
             musicState.updateSelectedMusic(updatedMusic);
+            musicState.addMusic(updatedMusic);
 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Audio cropped successfully')),
             );
+
+            Navigator.pop(context);
           } else {
             throw Exception('Output file not created');
           }

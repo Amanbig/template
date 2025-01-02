@@ -45,9 +45,7 @@ class MusicModel {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is MusicModel && 
-           other.name == name && 
-           other.url == url &&
-           other.base64Data == base64Data; // Include base64Data in equality check
+           other.name == name ; // Include base64Data in equality check
   }
 
   @override
