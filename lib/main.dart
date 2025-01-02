@@ -1,14 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import 'package:template/models/music_provider.dart';
 import 'package:template/pages/home_page.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => MusicState(),
+    ProviderScope(
       child: MyApp(),
     ),
   );
