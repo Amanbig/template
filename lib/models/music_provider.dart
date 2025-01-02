@@ -1,55 +1,94 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:template/models/MusicModel.dart';
 
-class MusicState with ChangeNotifier {
-  // List of available music items
-  List<MusicModel> _musicList = [
-    MusicModel(name: 'Upload your own music', url: 'url_to_upload_music'),
-    MusicModel(name: 'Music 1', url: 'url_to_music_1'),
-    MusicModel(name: 'Music 2', url: 'url_to_music_2'),
-    MusicModel(name: 'Music 3', url: 'url_to_music_3'),
-    MusicModel(name: 'Music 4', url: 'url_to_music_4'),
-    MusicModel(name: 'Music 5', url: 'url_to_music_5'),
-  ];
+// Define the provider
+final musicStateProvider = StateNotifierProvider<MusicState, MusicStateModel>((ref) {
+  return MusicState();
+});
 
-  // Selected music item and dropdown visibility
-  MusicModel _selectedMusic = MusicModel(name: 'Music 1', url: 'url_to_music_1');
-  bool _isDropdownVisible = false;
-  String _audioPath = '';
+// Immutable state model
+class MusicStateModel {
+  final List<MusicModel> musicList;
+  final MusicModel selectedMusic;
+  final bool isDropdownVisible;
+  final String audioPath;
 
-  // Getters for state variables
-  List<MusicModel> get musicList => _musicList;
-  MusicModel get selectedMusic => _selectedMusic;
-  bool get isDropdownVisible => _isDropdownVisible;
-  String get audioPath => _audioPath;
+  MusicStateModel({
+    required this.musicList,
+    required this.selectedMusic,
+    required this.isDropdownVisible,
+    required this.audioPath,
+  });
 
-  // Method to toggle the visibility of the dropdown
+  // Copy with method for immutable state updates
+  MusicStateModel copyWith({
+    List<MusicModel>? musicList,
+    MusicModel? selectedMusic,
+    bool? isDropdownVisible,
+    String? audioPath,
+  }) {
+    return MusicStateModel(
+      musicList: musicList ?? this.musicList,
+      selectedMusic: selectedMusic ?? this.selectedMusic,
+      isDropdownVisible: isDropdownVisible ?? this.isDropdownVisible,
+      audioPath: audioPath ?? this.audioPath,
+    );
+  }
+}
+
+// StateNotifier class to manage the state
+class MusicState extends StateNotifier<MusicStateModel> {
+  MusicState()
+      : super(
+          MusicStateModel(
+            musicList: [
+              MusicModel(name: 'Upload your own music', url: 'url_to_upload_music'),
+              MusicModel(name: 'Music 1', url: 'url_to_music_1'),
+              MusicModel(name: 'Music 2', url: 'url_to_music_2'),
+              MusicModel(name: 'Music 3', url: 'url_to_music_3'),
+              MusicModel(name: 'Music 4', url: 'url_to_music_4'),
+              MusicModel(name: 'Music 5', url: 'url_to_music_5'),
+            ],
+            selectedMusic: MusicModel(name: 'Music 1', url: 'url_to_music_1'),
+            isDropdownVisible: false,
+            audioPath: '',
+          ),
+        );
+
+  // Toggle dropdown visibility
   void toggleDropdownVisibility() {
-    _isDropdownVisible = !_isDropdownVisible;
-    notifyListeners(); // Notify listeners to rebuild
+    state = state.copyWith(
+      isDropdownVisible: !state.isDropdownVisible,
+    );
   }
 
-  // Method to update selected music
+  // Update selected music
   void updateSelectedMusic(MusicModel music) {
-    _selectedMusic = music;
-    notifyListeners(); // Notify listeners to rebuild
+    state = state.copyWith(
+      selectedMusic: music,
+    );
   }
 
-  // Method to update the audio path (e.g., from file picker or cropping)
+  // Update audio path
   void updateAudioPath(String path) {
-    _audioPath = path;
-    notifyListeners(); // Notify listeners to rebuild
+    state = state.copyWith(
+      audioPath: path,
+    );
   }
 
-  // Method to add new music to the list
+  // Add new music
   void addMusic(MusicModel music) {
-    _musicList.insert(1,music);
-    notifyListeners(); // Notify listeners to rebuild
+    final updatedList = List<MusicModel>.from(state.musicList)..insert(1, music);
+    state = state.copyWith(
+      musicList: updatedList,
+    );
   }
 
-  // Method to remove music from the list
+  // Remove music
   void removeMusic(MusicModel music) {
-    _musicList.remove(music);
-    notifyListeners(); // Notify listeners to rebuild
+    final updatedList = List<MusicModel>.from(state.musicList)..remove(music);
+    state = state.copyWith(
+      musicList: updatedList,
+    );
   }
 }
