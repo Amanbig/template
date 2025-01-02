@@ -86,15 +86,15 @@ class DropDown extends ConsumerWidget {
       onTap: () => ref.read(musicStateProvider.notifier).toggleDropdownVisibility(),
       child: Container(
         width: double.infinity,
-        height: 42,
+        height: 55,
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.5),
-              spreadRadius: 2,
+              spreadRadius: 3,
               blurRadius: 3,
-              offset: const Offset(0, 2),
+              offset: const Offset(0, 3),
             ),
           ],
           border: Border.all(color: Colors.grey, width: 1.0),
@@ -109,6 +109,10 @@ class DropDown extends ConsumerWidget {
               child: Text(
                 musicState.selectedMusic.name,
                 overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold
+                ),
               ),
             ),
             Icon(
@@ -124,21 +128,21 @@ class DropDown extends ConsumerWidget {
 
   Widget _buildDropdownList(BuildContext context, WidgetRef ref, MusicStateModel musicState) {
     return Container(
-      margin: const EdgeInsets.only(top: 5),
+      margin: const EdgeInsets.only(top: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.4),
+            spreadRadius: 3,
+            blurRadius: 3,
+            offset: const Offset(0, 3),
           ),
         ],
         borderRadius: BorderRadius.circular(5),
       ),
       child: SizedBox(
-        height: 250,
+        height: 350,
         child: ListView.builder(
           itemCount: musicState.musicList.length,
           itemBuilder: (context, index) {
@@ -153,33 +157,32 @@ class DropDown extends ConsumerWidget {
                     ..toggleDropdownVisibility();
                 }
               },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Icon(
-                      index == 0 
-                        ? Icons.upload_outlined 
-                        : Icons.play_circle_outlined,
-                      color: Colors.black,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        style: TextStyle(
-                          color: index == 0 ? Colors.green : Colors.black,
-                          decoration: index == 0
-                            ? TextDecoration.underline
-                            : TextDecoration.none,
-                          decorationColor:
-                              index == 0 ? Colors.green : Colors.transparent,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Icon(
+                    index == 0
+                      ? Icons.file_upload_outlined
+                      : Icons.play_circle_outlined,
+                    color: Colors.black,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      style: TextStyle(
+                        color: index == 0 ? Colors.green : Colors.black,
+                        fontSize: 18,
+                        decoration: index == 0
+                          ? TextDecoration.underline
+                          : TextDecoration.none,
+                        decorationColor:
+                            index == 0 ? Colors.green : Colors.transparent,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },

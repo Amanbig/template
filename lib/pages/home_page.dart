@@ -18,19 +18,18 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Padding(
+      appBar: AppBar(
+          title: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.arrow_back),
+                Icon(Icons.arrow_back,size: 32,),
                 Text(
                   'Video Music Details',
                   style: TextStyle(
                     color: Colors.black,
-                    fontSize: 18,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                     fontFamily: 'Times New Roman',
@@ -42,6 +41,12 @@ class HomePage extends ConsumerWidget {
               ],
             ),
           ),
+        backgroundColor: Colors.white,
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -55,36 +60,96 @@ class HomePage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 25,
                     children: [
-                      Text(
-                        'Total Video Duration: 3:45',
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex:2,
+                            child: Text(
+                              'Total Video Duration:',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 4,),
+                          Expanded(
+                            flex:2,
+                            child: Text(
+                              '3:45',
+                              style: TextStyle(
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Total Music Duration: 3:45',
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex:2,
+                            child: Text(
+                              'Total Music Duration:',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 4,),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                            '3:45',
+                            style: TextStyle(
+                              fontSize: 18,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Selected Music: ${selectedMusic.name}',  // Access selected music from provider
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2, // Adjust flex values as needed
+                            child: Text(
+                              'Selected Music:',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            flex: 3, // Adjust flex values as needed
+                            child: Text(
+                              selectedMusic.name, // Access selected music from provider
+                              style: const TextStyle(
+                                fontSize: 18,
+                              ),
+                              overflow: TextOverflow.ellipsis, // Ensures long text doesn't overflow
+                            ),
+                          ),
+                        ],
                       ),
-                      DropDown(),
+
                     ],
                   ),
                 ),
+                SizedBox(height: 23,),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: DropDown(),
+                ),
                 // Conditionally display HomePageButtons based on dropdown visibility
-                !isDropdownVisible
-                    ? HomePageButtons(
+                if(!isDropdownVisible)
+                  HomePageButtons(
                         setAudio: (url) {
                           ref.read(musicStateProvider.notifier).updateAudioPath(url);  // Update audio path using the provider
                         },
-                      )
-                    : Container(),
+                      ),
               ],
             ),
           ),

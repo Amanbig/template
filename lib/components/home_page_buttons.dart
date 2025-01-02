@@ -36,12 +36,12 @@ class HomePageButtons extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.music_note),
+                Icon(Icons.music_note, size: 32,color: Colors.black,),
                 Text(
                   'Crop Music',
                   style: TextStyle(
                     color: Colors.grey[800],
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                     fontFamily: 'Times New Roman',
@@ -53,54 +53,57 @@ class HomePageButtons extends ConsumerWidget {
           ),
         ),
 
-        SizedBox(height: 44), // Adds space between the buttons
+        SizedBox(height: 84), // Adds space between the buttons
 
         // Save Video Button
-        Container(
-          width: double.infinity,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: () {},
-                style: ButtonStyle(
-                  backgroundColor:
-                  MaterialStateProperty.all(Colors.grey[800]),
-                  fixedSize: MaterialStateProperty.all(Size(250, 45)),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            width: double.infinity,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ButtonStyle(
+                    backgroundColor:
+                    MaterialStateProperty.all(Colors.grey[800]),
+                    fixedSize: MaterialStateProperty.all(Size(300, 55)),
+                  ),
+                  child: Text(
+                    'Save Video',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
                 ),
-                child: Text(
-                  'Save Video',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              SizedBox(height: 14), // Adds space between buttons
+                SizedBox(height: 34), // Adds space between buttons
 
-              // Save Button
-              TextButton(
-                onPressed: () {},
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(Colors.white),
-                  fixedSize: MaterialStateProperty.all(Size(250, 45)),
-                  side: MaterialStateProperty.all(
-                    BorderSide(
-                      color: Colors.black,
-                      width: 2,
+                // Save Button
+                TextButton(
+                  onPressed: () {},
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(Colors.white),
+                    fixedSize: MaterialStateProperty.all(Size(300, 55)),
+                    side: MaterialStateProperty.all(
+                      BorderSide(
+                        color: Colors.black,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    'Save',
+                    style: TextStyle(
+                      color: Colors.grey[800],
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      fontFamily: 'Times New Roman',
                     ),
                   ),
                 ),
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    color: Colors.grey[800],
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                    fontFamily: 'Times New Roman',
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:template/components/waveform.dart';
 import 'package:template/models/MusicModel.dart';
 import 'package:template/models/music_provider.dart';
 
@@ -281,10 +282,10 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
 
   Widget _buildWaveformDisplay() {
     return Container(
-      height: 50,
+      height: 70,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black, width: 2),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
             color: Colors.white,
@@ -313,8 +314,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                   return Positioned(
                     left: (currentTime / totalDuration) * constraints.maxWidth,
                     child: Container(
-                      width: 2,
-                      height: 50,
+                      width: 4,
+                      height: 70,
                       color: Colors.black,
                     ),
                   );
@@ -335,7 +336,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
           left: 0,
           width: (start / totalDuration) * containerWidth,
           child: Container(
-            height: 50,
+            height: 70,
             color: Colors.black.withOpacity(0.3),
           ),
         ),
@@ -344,7 +345,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
           right: 0,
           width: ((totalDuration - end) / totalDuration) * containerWidth,
           child: Container(
-            height: 50,
+            height: 70,
             color: Colors.black.withOpacity(0.3),
           ),
         ),
@@ -362,7 +363,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             },
             child: Container(
               width: 8,
-              height: 50,
+              height: 70,
               color: Colors.black,
             ),
           ),
@@ -382,7 +383,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             },
             child: Container(
               width: 8,
-              height: 50,
+              height: 70,
               color: Colors.black,
             ),
           ),
@@ -443,14 +444,14 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
               style: const TextStyle(
                 color: Colors.black87,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: 16,
               ),
             ),
             TextField(
               controller: controller,
               style: const TextStyle(
                 color: Colors.black87,
-                fontSize: 14,
+                fontSize: 16,
               ),
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
@@ -485,7 +486,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             '$label:',
             style: const TextStyle(
               color: Colors.black,
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -495,7 +496,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 16,
             ),
           ),
         ],
@@ -521,7 +522,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                       ? Icons.pause_circle_outline
                       : Icons.play_circle_outline,
                   key: ValueKey<bool>(isPlaying),
-                  size: 30, // Ensure consistent size
+                  size: 32, // Ensure consistent size
                   color: Colors.black,
                 ),
               ),
@@ -532,7 +533,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                   !isPlaying ? 'Play' : 'Pause',
                   key: ValueKey<bool>(isPlaying),
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -605,58 +606,3 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   }
 }
 
-class WaveformPainter extends CustomPainter {
-  final double currentTime;
-  final double totalDuration;
-  final double start;
-  final double end;
-
-  // Fixed waveform values to create a static pattern
-  final List<double> _waveformValues = [
-    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, // First wave
-    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, // Second wave
-    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, // Third wave
-    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, // Fourth wave
-    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, // Fifth wave
-    // Repeat the pattern to fill 100 points
-  ].expand((x) => [x, x]).take(100).toList();
-
-  WaveformPainter({
-    required this.currentTime,
-    required this.totalDuration,
-    required this.start,
-    required this.end,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 2.5;
-
-    final lineCount = 100; // Number of vertical lines
-    final lineWidth = size.width / lineCount;
-    final centerY = size.height / 2;
-
-    // Draw the waveform using the fixed pattern
-    for (int i = 0; i < lineCount; i++) {
-      final x = i * lineWidth;
-
-      // Use the pre-defined static height factor
-      final amplitude = _waveformValues[i];
-
-      // Calculate the height of the line
-      final lineHeight = amplitude * size.height / 2;
-
-      // Draw the waveform line
-      canvas.drawLine(
-        Offset(x, centerY - lineHeight),
-        Offset(x, centerY + lineHeight),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
