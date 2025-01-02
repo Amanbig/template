@@ -1,24 +1,25 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:template/models/MusicModel.dart';
 import 'package:template/models/music_provider.dart';
 
-class AudioCropperPage extends StatefulWidget {
-
+class AudioCropperPage extends ConsumerStatefulWidget {
   AudioCropperPage({super.key});
 
   @override
-  State<AudioCropperPage> createState() => _AudioCropperPageState();
+  ConsumerState<AudioCropperPage> createState() => _AudioCropperPageState();
 }
 
-class _AudioCropperPageState extends State<AudioCropperPage> {
+class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final ValueNotifier<double> _currentTimeNotifier = ValueNotifier(0);
   final TextEditingController _startController = TextEditingController();
@@ -41,7 +42,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
 
   void _initAudioPlayer() async {
     final fileUri = Uri.file(
-            Provider.of<MusicState>(context, listen: false).selectedMusic.url)
+            ref.read(musicStateProvider).selectedMusic.url)
         .toString();
 
     // Preload the audio to get the duration
@@ -78,59 +79,72 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
     }
   }
 
+  void _cropAndSaveAudio() async {
+  try {
+    final musicState = ref.read(musicStateProvider.notifier);
+    final selectedMusic = ref.read(musicStateProvider).selectedMusic;
 
-  void _cropAndSaveAudio(BuildContext context) async {
-    try {
-      final musicState = Provider.of<MusicState>(context, listen: false);
-      final selectedMusic = musicState.selectedMusic;
+    // Get a directory to save the cropped file
+    final directory = await getApplicationDocumentsDirectory();
+    final outputPath = '${directory.path}/${selectedMusic.name}(cropped).mp3';
 
-      // Get a directory to save the cropped file
-      final directory = await getApplicationDocumentsDirectory();
-      final outputPath = '${directory.path}/${selectedMusic.name}(cropped).mp3';
+    // Build the FFmpeg command
+    final command = [
+      '-i',
+      '"${selectedMusic.url}"', // Input file with quotes for spaces or special chars
+      '-ss', start.toString(), // Start time in seconds
+      '-to', end.toString(), // End time in seconds
+      '-c', 'copy', // Avoid re-encoding for faster processing
+      '"$outputPath"' // Output file path with quotes
+    ];
 
-      // Build the FFmpeg command
-      final command = [
-        '-i', '"${selectedMusic.url}"',  // Input file with quotes for spaces or special chars
-        '-ss', start.toString(),         // Start time in seconds
-        '-to', end.toString(),           // End time in seconds
-        '-c', 'copy',                    // Avoid re-encoding for faster processing
-        '"$outputPath"'                  // Output file path with quotes
-      ];
+    print('Selected audio file path: ${selectedMusic.url}');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Selected audio file path: ${selectedMusic.url}')),
+    );
 
-      print('Selected audio file path: ${selectedMusic.url}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Selected audio file path: ${selectedMusic.url}')),
-      );
+    // Execute the FFmpeg command
+    await FFmpegKit.execute(command.join(' ')).then((session) async {
+      final returnCode = await session.getReturnCode();
 
-      // Execute the FFmpeg command
-      await FFmpegKit.execute(command.join(' ')).then((session) async {
-        final returnCode = await session.getReturnCode();
+      if (ReturnCode.isSuccess(returnCode)) {
+        // File saved successfully
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cropped audio saved at $outputPath')),
+        );
 
-        if (ReturnCode.isSuccess(returnCode)) {
-          // File saved successfully
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Cropped audio saved at $outputPath')),
-          );
-          musicState.updateAudioPath(outputPath);
-          musicState.updateSelectedMusic(
-            MusicModel(name: '${selectedMusic.name}(cropped)', url: outputPath),
-          );
-        } else {
-          // Handle errors
-          final failMessage = await session.getFailStackTrace();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to crop audio: $failMessage')),
-          );
-        }
-      });
+        // Convert the saved file to base64
+        final file = File(outputPath);
+        final bytes = await file.readAsBytes();
+        final base64String = base64Encode(bytes);
 
-    } catch (e) {
-      // Handle any errors
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
+        // Create the MusicModel with base64 data
+        final updatedMusic = MusicModel(
+          name: '${selectedMusic.name}(cropped)',
+          url: outputPath,
+          base64Data: base64String, // Include base64-encoded data
+        );
+
+        // Update the state with the new MusicModel
+        musicState.updateAudioPath(outputPath);
+        musicState.updateSelectedMusic(updatedMusic);
+      } else {
+        // Handle errors
+        final failMessage = await session.getFailStackTrace();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to crop audio: $failMessage')),
+        );
+      }
+    });
+  } catch (e) {
+    // Handle any errors
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
   }
+}
+
+
 
   void _updateTimeFromText(bool isStart) {
     try {
@@ -171,7 +185,9 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
     if (isPlaying) {
       await _audioPlayer.pause();
     } else {
-      final fileUri = Uri.file(Provider.of<MusicState>(context, listen: false).selectedMusic.url).toString();
+      final fileUri = Uri.file(
+              ref.read(musicStateProvider).selectedMusic.url)
+          .toString();
       await _audioPlayer.play(DeviceFileSource(fileUri));
       await _audioPlayer.seek(Duration(milliseconds: (start * 1000).toInt()));
     }
@@ -185,7 +201,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
 
   @override
   Widget build(BuildContext context) {
-    final musicState = Provider.of<MusicState>(context);
+    final musicState = ref.watch(musicStateProvider);
     final selectedMusic = musicState.selectedMusic;
 
     return Scaffold(
@@ -303,7 +319,6 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
     );
   }
 
-
   Widget _buildCropHandles(double containerWidth) {
     return Stack(
       children: [
@@ -346,7 +361,8 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
         ),
         // End handle
         Positioned(
-          left: ((end / totalDuration) * containerWidth) - 5,  // Subtract handle width
+          left: ((end / totalDuration) * containerWidth) -
+              5, // Subtract handle width
           child: GestureDetector(
             onHorizontalDragUpdate: (details) {
               setState(() {
@@ -380,16 +396,19 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildTimeInput('Start', _startController, true, isSmallScreen),
+                  _buildTimeInput(
+                      'Start', _startController, true, isSmallScreen),
                   _buildTimeInput('End', _endController, false, isSmallScreen),
-                  if(!isSmallScreen)_buildTimeDisplay('Duration', _formatTime(end - start)),
-                  if(!isSmallScreen)_buildPlaybackControls(),
+                  if (!isSmallScreen)
+                    _buildTimeDisplay('Duration', _formatTime(end - start)),
+                  if (!isSmallScreen) _buildPlaybackControls(),
                 ],
               ),
               const SizedBox(height: 10),
-              if(isSmallScreen)_buildTimeDisplay('Duration', _formatTime(end - start)),
+              if (isSmallScreen)
+                _buildTimeDisplay('Duration', _formatTime(end - start)),
               const SizedBox(height: 10),
-              if(isSmallScreen)_buildPlaybackControls(),
+              if (isSmallScreen) _buildPlaybackControls(),
             ],
           );
         },
@@ -397,9 +416,10 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
     );
   }
 
-  Widget _buildTimeInput(
-      String label, TextEditingController controller, bool isStart, bool isSmallScreen) {
-    final double width = isSmallScreen ? 50 : 70; // Adjust width for smaller screens
+  Widget _buildTimeInput(String label, TextEditingController controller,
+      bool isStart, bool isSmallScreen) {
+    final double width =
+        isSmallScreen ? 50 : 70; // Adjust width for smaller screens
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Container(
@@ -428,7 +448,8 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
                 border: const OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(8)),
                 ),
@@ -488,7 +509,9 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
                   return ScaleTransition(scale: animation, child: child);
                 },
                 child: Icon(
-                  isPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                  isPlaying
+                      ? Icons.pause_circle_outline
+                      : Icons.play_circle_outline,
                   key: ValueKey<bool>(isPlaying),
                   size: 30, // Ensure consistent size
                   color: Colors.black,
@@ -512,8 +535,6 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
       ],
     );
   }
-
-
 
   Widget _buildActionButtons() {
     return Row(
@@ -541,7 +562,9 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.arrow_back, color: Colors.grey[800]),
-              SizedBox(width: 4,),
+              SizedBox(
+                width: 4,
+              ),
               Text('Back',
                   style: TextStyle(
                     color: Colors.grey[800],
@@ -554,7 +577,7 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
           ),
         ),
         ElevatedButton(
-          onPressed:()=>  _cropAndSaveAudio(context),
+          onPressed: () => _cropAndSaveAudio(),
           style: ButtonStyle(
             backgroundColor: MaterialStateProperty.all(Colors.grey[800]),
             fixedSize: MaterialStateProperty.all(Size(250, 45)),
@@ -574,7 +597,6 @@ class _AudioCropperPageState extends State<AudioCropperPage> {
   }
 }
 
-
 class WaveformPainter extends CustomPainter {
   final double currentTime;
   final double totalDuration;
@@ -583,11 +605,11 @@ class WaveformPainter extends CustomPainter {
 
   // Fixed waveform values to create a static pattern
   final List<double> _waveformValues = [
-    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,  // First wave
-    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4,  // Second wave
-    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,  // Third wave
-    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4,  // Fourth wave
-    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,  // Fifth wave
+    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, // First wave
+    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, // Second wave
+    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, // Third wave
+    0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, // Fourth wave
+    0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, // Fifth wave
     // Repeat the pattern to fill 100 points
   ].expand((x) => [x, x]).take(100).toList();
 
@@ -630,6 +652,3 @@ class WaveformPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
-
-
-
