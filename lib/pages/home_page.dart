@@ -60,81 +60,24 @@ class HomePage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 25,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            flex:2,
-                            child: Text(
-                              'Total Video Duration:',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 4,),
-                          Expanded(
-                            flex:2,
-                            child: Text(
-                              '3:45',
-                              style: TextStyle(
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Total Video Duration: 3:45',
+                        style: TextStyle(
+                          fontSize: 18,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex:2,
-                            child: Text(
-                              'Total Music Duration:',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 4,),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                            '3:45',
-                            style: TextStyle(
-                              fontSize: 18,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          ),
-                        ],
+                      Text(
+                        'Total Music Duration: 3:45',
+                        style: TextStyle(
+                          fontSize: 18,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2, // Adjust flex values as needed
-                            child: Text(
-                              'Selected Music:',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            flex: 3, // Adjust flex values as needed
-                            child: Text(
-                              selectedMusic.name, // Access selected music from provider
-                              style: const TextStyle(
-                                fontSize: 18,
-                              ),
-                              overflow: TextOverflow.ellipsis, // Ensures long text doesn't overflow
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Selected Music: ${selectedMusic.name}',  // Access selected music from provider
+                        style: TextStyle(
+                          fontSize: 18,
+                        ),
                       ),
-
                     ],
                   ),
                 ),
