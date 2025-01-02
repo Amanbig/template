@@ -46,7 +46,7 @@ class DropDown extends ConsumerWidget {
 
         final randomFileName = _generateRandomFileName();
         final newMusic = MusicModel(
-          name: fileName, // Use original file name for better UX
+          name:  fileName.endsWith('.mp3') ? fileName.substring(0, fileName.length - 4) : fileName, // Use original file name for better UX
           url: newPath,
         );
 

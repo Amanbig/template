@@ -119,7 +119,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             final updatedMusic = MusicModel(
               name: selectedMusic.name.contains('(cropped)')
                   ? selectedMusic.name
-                  : selectedMusic.name.replaceAll('.mp3', '(cropped).mp3'), // Only append "(cropped)" if not already present
+                  : selectedMusic.name+'(cropped)', // Only append "(cropped)" if not already present
               url: outputPath,
               base64Data: base64String, // Include base64-encoded data
             );
