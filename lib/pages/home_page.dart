@@ -1,18 +1,21 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
-import 'package:provider/provider.dart';  // Import provider
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+// Import provider
 import 'package:template/components/drop_down.dart';
 import 'package:template/components/home_page_buttons.dart';
-  // Import your MusicModel class
+// Import your MusicModel class
 import 'package:template/models/music_provider.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Access the MusicState using Consumer
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Access the MusicState using ref.watch to get selected music and dropdown visibility
+    final selectedMusic = ref.watch(musicStateProvider.select((state) => state.selectedMusic));
+    final isDropdownVisible = ref.watch(musicStateProvider.select((state) => state.isDropdownVisible));
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -65,7 +68,7 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Selected Music: ${context.watch<MusicState>().selectedMusic.name}',  // Watch the selected music from provider
+                        'Selected Music: ${selectedMusic.name}',  // Access selected music from provider
                         style: TextStyle(
                           fontSize: 14,
                         ),
@@ -74,13 +77,14 @@ class HomePage extends StatelessWidget {
                     ],
                   ),
                 ),
-                !context.watch<MusicState>().isDropdownVisible
+                // Conditionally display HomePageButtons based on dropdown visibility
+                !isDropdownVisible
                     ? HomePageButtons(
-                  setAudio: (url) {
-                    context.read<MusicState>().updateAudioPath(url);  // Set audio path through provider
-                  },)
+                        setAudio: (url) {
+                          ref.read(musicStateProvider.notifier).updateAudioPath(url);  // Update audio path using the provider
+                        },
+                      )
                     : Container(),
-
               ],
             ),
           ),
