@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:template/models/music_provider.dart';
 import 'package:template/pages/crop_page.dart';
 
-class HomePageButtons extends StatelessWidget {
+class HomePageButtons extends ConsumerWidget {
   final Function setAudio;
 
   HomePageButtons({
@@ -13,9 +13,9 @@ class HomePageButtons extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context,WidgetRef ref) {
     // Access selected music from MusicState provider
-    final selectedMusic = context.watch<MusicState>().selectedMusic;
+    final selectedMusic = ref.watch(musicStateProvider.select((state) => state.selectedMusic));
 
     return Column(
       children: [
@@ -64,14 +64,14 @@ class HomePageButtons extends StatelessWidget {
             children: [
               ElevatedButton(
                 onPressed: () {},
-                child: Text(
-                  'Save Video',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
                 style: ButtonStyle(
                   backgroundColor:
                   MaterialStateProperty.all(Colors.grey[800]),
                   fixedSize: MaterialStateProperty.all(Size(250, 45)),
+                ),
+                child: Text(
+                  'Save Video',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
               SizedBox(height: 14), // Adds space between buttons
@@ -79,16 +79,6 @@ class HomePageButtons extends StatelessWidget {
               // Save Button
               TextButton(
                 onPressed: () {},
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    color: Colors.grey[800],
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                    fontFamily: 'Times New Roman',
-                  ),
-                ),
                 style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(Colors.white),
                   fixedSize: MaterialStateProperty.all(Size(250, 45)),
@@ -97,6 +87,16 @@ class HomePageButtons extends StatelessWidget {
                       color: Colors.black,
                       width: 2,
                     ),
+                  ),
+                ),
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                    color: Colors.grey[800],
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    fontFamily: 'Times New Roman',
                   ),
                 ),
               ),
