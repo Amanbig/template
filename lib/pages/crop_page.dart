@@ -80,69 +80,70 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   }
 
   void _cropAndSaveAudio() async {
-  try {
-    final musicState = ref.read(musicStateProvider.notifier);
-    final selectedMusic = ref.read(musicStateProvider).selectedMusic;
+    try {
+      final musicState = ref.read(musicStateProvider.notifier);
+      final selectedMusic = ref.read(musicStateProvider).selectedMusic;
 
-    // Get a directory to save the cropped file
-    final directory = await getApplicationDocumentsDirectory();
-    final outputPath = '${directory.path}/${selectedMusic.name}(cropped).mp3';
-
-    // Build the FFmpeg command
-    final command = [
-      '-i',
-      '"${selectedMusic.url}"', // Input file with quotes for spaces or special chars
-      '-ss', start.toString(), // Start time in seconds
-      '-to', end.toString(), // End time in seconds
-      '-c', 'copy', // Avoid re-encoding for faster processing
-      '"$outputPath"' // Output file path with quotes
-    ];
-
-    print('Selected audio file path: ${selectedMusic.url}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Selected audio file path: ${selectedMusic.url}')),
-    );
-
-    // Execute the FFmpeg command
-    await FFmpegKit.execute(command.join(' ')).then((session) async {
-      final returnCode = await session.getReturnCode();
-
-      if (ReturnCode.isSuccess(returnCode)) {
-        // File saved successfully
+      if (selectedMusic.url.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cropped audio saved at $outputPath')),
+          const SnackBar(content: Text('No audio file selected')),
         );
-
-        // Convert the saved file to base64
-        final file = File(outputPath);
-        final bytes = await file.readAsBytes();
-        final base64String = base64Encode(bytes);
-
-        // Create the MusicModel with base64 data
-        final updatedMusic = MusicModel(
-          name: '${selectedMusic.name}(cropped)',
-          url: outputPath,
-          base64Data: base64String, // Include base64-encoded data
-        );
-
-        // Update the state with the new MusicModel
-        musicState.updateAudioPath(outputPath);
-        musicState.updateSelectedMusic(updatedMusic);
-      } else {
-        // Handle errors
-        final failMessage = await session.getFailStackTrace();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to crop audio: $failMessage')),
-        );
+        return;
       }
-    });
-  } catch (e) {
-    // Handle any errors
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error: $e')),
-    );
+
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputPath = '${directory.path}/cropped_${timestamp}.mp3';
+
+      // Ensure input file exists
+      final inputFile = File(selectedMusic.url);
+      if (!await inputFile.exists()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Input file not found')),
+        );
+        return;
+      }
+
+      // Create FFmpeg command with escaped paths
+      final command = '-i "${selectedMusic.url}" -ss $start -to $end -c copy "$outputPath"';
+
+      await FFmpegKit.execute(command).then((session) async {
+        final returnCode = await session.getReturnCode();
+
+        if (ReturnCode.isSuccess(returnCode)) {
+          final outputFile = File(outputPath);
+          if (await outputFile.exists()) {
+            final bytes = await outputFile.readAsBytes();
+            final base64String = base64Encode(bytes);
+
+            final updatedMusic = MusicModel(
+              name: selectedMusic.name.contains('(cropped)')
+                  ? selectedMusic.name
+                  : '${selectedMusic.name}(cropped)', // Only append "(cropped)" if not already present
+              url: outputPath,
+              base64Data: base64String, // Include base64-encoded data
+            );
+
+            musicState.updateAudioPath(outputPath);
+            musicState.updateSelectedMusic(updatedMusic);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Audio cropped successfully')),
+            );
+          } else {
+            throw Exception('Output file not created');
+          }
+        } else {
+          final logs = await session.getLogsAsString();
+          throw Exception('FFmpeg failed: $logs');
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
   }
-}
 
 
 
