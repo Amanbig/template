@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
-class Playbackcontrols extends StatelessWidget {
-  bool isPlaying = false;
+class PlaybackControls extends StatelessWidget {
+  bool isPlaying;
   var playPauseMusic;
-  Playbackcontrols({super.key, required this.isPlaying, required this.playPauseMusic});
+  
+  PlaybackControls({
+    super.key,
+    required this.isPlaying,
+    required this.playPauseMusic,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +25,7 @@ class Playbackcontrols extends StatelessWidget {
                   return ScaleTransition(scale: animation, child: child);
                 },
                 child: Icon(
-                  isPlaying
-                      ? Icons.pause_circle_outline
-                      : Icons.play_circle_outline,
+                  isPlaying ? Icons.pause_circle_outline : Icons.play_circle_outline,
                   key: ValueKey<bool>(isPlaying),
                   size: 32, // Ensure consistent size
                   color: Colors.black,
@@ -31,12 +34,16 @@ class Playbackcontrols extends StatelessWidget {
               const SizedBox(width: 5),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                child: Text(
-                  !isPlaying ? 'Play' : 'Pause',
-                  key: ValueKey<bool>(isPlaying),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                child: SizedBox(
+                  width: 50, // Fixed width to avoid layout shifts
+                  child: Text(
+                    isPlaying ? 'Pause' : 'Play',
+                    key: ValueKey<bool>(isPlaying),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

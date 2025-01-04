@@ -240,7 +240,10 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                   children: [
                     _buildWaveformDisplay(),
                     const SizedBox(height: 10),
-                    TimeLabels(start: _formatTime(start), end: _formatTime(end),),
+                    TimeLabels(
+                      start: _formatTime(start),
+                      end: _formatTime(end),
+                    ),
                     const SizedBox(height: 30),
                     _buildTimeControls(),
                   ],
@@ -254,7 +257,9 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                 children: [
                   const SizedBox(height: 20),
                   // _buildActionButtons(),
-                  ActionButtons(cropAndSaveAudio: _cropAndSaveAudio,),
+                  ActionButtons(
+                    cropAndSaveAudio: _cropAndSaveAudio,
+                  ),
                 ],
               ),
             ),
@@ -265,49 +270,52 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   }
 
   Widget _buildWaveformDisplay() {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black, width: 2),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white,
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            children: [
-              CustomPaint(
-                size: Size(constraints.maxWidth, 150),
-                painter: WaveformPainter(
-                  currentTime: 0.0,
-                  totalDuration: 100.0,
-                  start: 0.0,
-                  end: 100.0,
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+        height: 70,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black, width: 2),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white,
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Stack(
+              children: [
+                CustomPaint(
+                  size: Size(constraints.maxWidth, 150),
+                  painter: WaveformPainter(
+                    currentTime: 0.0,
+                    totalDuration: 100.0,
+                    start: 0.0,
+                    end: 100.0,
+                  ),
                 ),
-              ),
-              _buildCropHandles(constraints.maxWidth),
-              ValueListenableBuilder<double>(
-                valueListenable: _currentTimeNotifier,
-                builder: (context, currentTime, _) {
-                  return Positioned(
-                    left: (currentTime / totalDuration) * constraints.maxWidth,
-                    child: Container(
-                      width: 4,
-                      height: 70,
-                      color: Colors.black,
-                    ),
-                  );
-                },
-              ),
-            ],
-          );
-        },
+                _buildCropHandles(constraints.maxWidth),
+                ValueListenableBuilder<double>(
+                  valueListenable: _currentTimeNotifier,
+                  builder: (context, currentTime, _) {
+                    return Positioned(
+                      left: (currentTime / totalDuration) * constraints.maxWidth,
+                      child: Container(
+                        width: 4,
+                        height: 70,
+                        color: Colors.black,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -389,20 +397,38 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  TimeInput(controller: _startController, label: 'Start', isStart: true, isSmallScreen: isSmallScreen, updateTimeFromText: _updateTimeFromText),
-                  TimeInput(controller: _endController, label: 'End', isStart: false, isSmallScreen: isSmallScreen, updateTimeFromText: _updateTimeFromText),
+                  TimeInput(
+                      controller: _startController,
+                      label: 'Start',
+                      isStart: true,
+                      isSmallScreen: isSmallScreen,
+                      updateTimeFromText: _updateTimeFromText),
+                  TimeInput(
+                      controller: _endController,
+                      label: 'End',
+                      isStart: false,
+                      isSmallScreen: isSmallScreen,
+                      updateTimeFromText: _updateTimeFromText),
                   if (!isSmallScreen)
-                    TimeDisplay(label: 'Duration',time:  _formatTime(end - start),),
+                    TimeDisplay(
+                      label: 'Duration',
+                      time: _formatTime(end - start),
+                    ),
                   if (!isSmallScreen)
-                  Playbackcontrols(isPlaying: isPlaying, playPauseMusic: _playPauseMusic),
+                    PlaybackControls(
+                        isPlaying: isPlaying, playPauseMusic: _playPauseMusic),
                 ],
               ),
               const SizedBox(height: 10),
               if (isSmallScreen)
-                TimeDisplay(label: 'Duration',time:  _formatTime(end - start),),
+                TimeDisplay(
+                  label: 'Duration',
+                  time: _formatTime(end - start),
+                ),
               const SizedBox(height: 10),
-              if (isSmallScreen) 
-              Playbackcontrols(isPlaying: isPlaying, playPauseMusic: _playPauseMusic)
+              if (isSmallScreen)
+                PlaybackControls(
+                    isPlaying: isPlaying, playPauseMusic: _playPauseMusic)
             ],
           );
         },
