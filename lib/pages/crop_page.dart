@@ -270,52 +270,49 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   }
 
   Widget _buildWaveformDisplay() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Container(
-        height: 70,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black, width: 2),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.white,
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Stack(
-              children: [
-                CustomPaint(
-                  size: Size(constraints.maxWidth, 150),
-                  painter: WaveformPainter(
-                    currentTime: 0.0,
-                    totalDuration: 100.0,
-                    start: 0.0,
-                    end: 100.0,
-                  ),
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 2),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white,
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              CustomPaint(
+                size: Size(constraints.maxWidth, 150),
+                painter: WaveformPainter(
+                  currentTime: 0.0,
+                  totalDuration: 100.0,
+                  start: 0.0,
+                  end: 100.0,
                 ),
-                _buildCropHandles(constraints.maxWidth),
-                ValueListenableBuilder<double>(
-                  valueListenable: _currentTimeNotifier,
-                  builder: (context, currentTime, _) {
-                    return Positioned(
-                      left: (currentTime / totalDuration) * constraints.maxWidth,
-                      child: Container(
-                        width: 4,
-                        height: 70,
-                        color: Colors.black,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        ),
+              ),
+              _buildCropHandles(constraints.maxWidth),
+              ValueListenableBuilder<double>(
+                valueListenable: _currentTimeNotifier,
+                builder: (context, currentTime, _) {
+                  return Positioned(
+                    left: (currentTime / totalDuration) * constraints.maxWidth,
+                    child: Container(
+                      width: 4,
+                      height: 70,
+                      color: Colors.black,
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -345,6 +342,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
         Positioned(
           left: (start / totalDuration) * containerWidth,
           child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
             onHorizontalDragUpdate: (details) {
               setState(() {
                 final newStart = start +
@@ -365,6 +363,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
           left: ((end / totalDuration) * containerWidth) -
               10, // Subtract handle width
           child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
             onHorizontalDragUpdate: (details) {
               setState(() {
                 final newEnd = end +

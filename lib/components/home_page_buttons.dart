@@ -28,7 +28,7 @@ class HomePageButtons extends ConsumerWidget {
               // Pass selected music data to AudioCropperPage
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                CupertinoPageRoute(
                   builder: (context) => AudioCropperPage(),
                 ),
               );
