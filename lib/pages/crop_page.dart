@@ -1,13 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+
 import 'package:audioplayers/audioplayers.dart';
+
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:async';
 import 'package:path_provider/path_provider.dart';
+
 import 'package:template/models/MusicModel.dart';
 import 'package:template/models/music_provider.dart';
 
@@ -37,6 +41,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   double end = 300;
   bool isDraggingStart = false;
   bool isDraggingEnd = false;
+  double startDragX = 0;
+  bool isDragging = false;
 
   @override
   void initState() {
@@ -110,8 +116,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
       }
 
       // Create FFmpeg command with escaped paths
-      final command =
-          '-i "${selectedMusic.url}" -ss $start -to $end -c copy "$outputPath"';
+      final command = '-i "${selectedMusic.url.replaceAll('"', '\\"')}" -ss $start -to $end -c copy "$outputPath"';
+
 
       await FFmpegKit.execute(command).then((session) async {
         final returnCode = await session.getReturnCode();
@@ -197,9 +203,13 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
       final fileUri =
           Uri.file(ref.read(musicStateProvider).selectedMusic.url).toString();
       await _audioPlayer.play(DeviceFileSource(fileUri));
-      await _audioPlayer.seek(Duration(milliseconds: (start * 1000).toInt()));
+      await _audioPlayer.seek(Duration(
+          milliseconds:
+              (!isDragging ? start * 1000 : startDragX >= currentTime?startDragX * 1000 : currentTime * 1000).toInt()));
     }
-    setState(() => isPlaying = !isPlaying);
+    setState(() {
+      isPlaying = !isPlaying;
+    });
   }
 
   String _formatTime(double time) {
@@ -271,49 +281,68 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   }
 
   Widget _buildWaveformDisplay() {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black, width: 2),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white,
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            children: [
-              CustomPaint(
-                size: Size(constraints.maxWidth, 150),
-                painter: WaveformPainter(
-                  currentTime: 0.0,
-                  totalDuration: 100.0,
-                  start: 0.0,
-                  end: 100.0,
+    return GestureDetector(
+      onTapDown: (details) {
+        final tapPosition = details.localPosition.dx;
+        final waveformWidth = context.size!.width - 32;
+        final newTime = (tapPosition / waveformWidth) * totalDuration;
+        setState(() {
+          currentTime = newTime.clamp(0, totalDuration);
+          _currentTimeNotifier.value = currentTime;
+          startDragX = currentTime;
+          isDragging = start <= startDragX && startDragX <= end;
+          _audioPlayer
+              .seek(Duration(milliseconds: (currentTime * 1000).toInt()));
+        });
+      },
+      child: Container(
+        height: 70,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black, width: 2),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white,
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final waveformWidth = constraints.maxWidth;
+            return Stack(
+              children: [
+                CustomPaint(
+                  size: Size(waveformWidth, 150),
+                  painter: WaveformPainter(
+                    currentTime: currentTime,
+                    totalDuration: totalDuration,
+                    start: start,
+                    end: end,
+                  ),
                 ),
-              ),
-              _buildCropHandles(constraints.maxWidth),
-              ValueListenableBuilder<double>(
-                valueListenable: _currentTimeNotifier,
-                builder: (context, currentTime, _) {
-                  return Positioned(
-                    left: (currentTime / totalDuration) * constraints.maxWidth,
-                    child: Container(
-                      width: 4,
-                      height: 70,
-                      color: Colors.black,
-                    ),
-                  );
-                },
-              ),
-            ],
-          );
-        },
+                _buildCropHandles(waveformWidth),
+                ValueListenableBuilder<double>(
+                  valueListenable: _currentTimeNotifier,
+                  builder: (context, currentTime, _) {
+                    final leftPosition =
+                        (currentTime / totalDuration) * waveformWidth;
+                    return Positioned(
+                      left: leftPosition.clamp(
+                          0, waveformWidth - 4), // Prevent overflow
+                      child: Container(
+                        width: 4,
+                        height: 70,
+                        color: Colors.black,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -350,6 +379,9 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                     (details.primaryDelta! / containerWidth) * totalDuration;
                 start = newStart.clamp(0, end - 1);
                 _startController.text = _formatTime(start);
+                if(start>startDragX){
+                  isDragging = false;
+                }
               });
             },
             child: Container(
@@ -371,6 +403,9 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                     (details.primaryDelta! / containerWidth) * totalDuration;
                 end = newEnd.clamp(start + 1, totalDuration);
                 _endController.text = _formatTime(end);
+                if(startDragX>end){
+                  isDragging = false;
+                }
               });
             },
             child: Container(
