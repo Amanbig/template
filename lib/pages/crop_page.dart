@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:path_provider/path_provider.dart';
-import 'package:template/components/waveform.dart';
 import 'package:template/models/MusicModel.dart';
 import 'package:template/models/music_provider.dart';
+
+import 'package:template/widgets/waveform_painter.dart';
 import 'package:template/widgets/PlayBackControls.dart';
 import 'package:template/widgets/action_buttons.dart';
 import 'package:template/widgets/time_display.dart';
