@@ -13,9 +13,10 @@ class HomePageButtons extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context,WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Access selected music from MusicState provider
-    final selectedMusic = ref.watch(musicStateProvider.select((state) => state.selectedMusic));
+    final selectedMusic =
+        ref.watch(musicStateProvider.select((state) => state.selectedMusic));
 
     return Column(
       children: [
@@ -27,16 +28,19 @@ class HomePageButtons extends ConsumerWidget {
               // Pass selected music data to AudioCropperPage
               Navigator.push(
                 context,
-                CupertinoPageRoute(
-                  builder: (context) => AudioCropperPage(
-                  ),
+                MaterialPageRoute(
+                  builder: (context) => AudioCropperPage(),
                 ),
               );
             },
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.music_note, size: 32,color: Colors.black,),
+                Icon(
+                  Icons.music_note,
+                  size: 32,
+                  color: Colors.black,
+                ),
                 Text(
                   'Crop Music',
                   style: TextStyle(
@@ -68,7 +72,7 @@ class HomePageButtons extends ConsumerWidget {
                   onPressed: () {},
                   style: ButtonStyle(
                     backgroundColor:
-                    MaterialStateProperty.all(Colors.grey[800]),
+                        MaterialStateProperty.all(Colors.grey[800]),
                     fixedSize: MaterialStateProperty.all(Size(300, 55)),
                   ),
                   child: Text(

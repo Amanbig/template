@@ -7,11 +7,15 @@ import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-
 import 'package:path_provider/path_provider.dart';
 import 'package:template/components/waveform.dart';
 import 'package:template/models/MusicModel.dart';
 import 'package:template/models/music_provider.dart';
+import 'package:template/widgets/PlayBackControls.dart';
+import 'package:template/widgets/action_buttons.dart';
+import 'package:template/widgets/time_display.dart';
+import 'package:template/widgets/time_input.dart';
+import 'package:template/widgets/time_labels.dart';
 
 class AudioCropperPage extends ConsumerStatefulWidget {
   AudioCropperPage({super.key});
@@ -42,9 +46,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   }
 
   void _initAudioPlayer() async {
-    final fileUri = Uri.file(
-            ref.read(musicStateProvider).selectedMusic.url)
-        .toString();
+    final fileUri =
+        Uri.file(ref.read(musicStateProvider).selectedMusic.url).toString();
 
     // Preload the audio to get the duration
     await _audioPlayer.setSource(DeviceFileSource(fileUri));
@@ -106,7 +109,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
       }
 
       // Create FFmpeg command with escaped paths
-      final command = '-i "${selectedMusic.url}" -ss $start -to $end -c copy "$outputPath"';
+      final command =
+          '-i "${selectedMusic.url}" -ss $start -to $end -c copy "$outputPath"';
 
       await FFmpegKit.execute(command).then((session) async {
         final returnCode = await session.getReturnCode();
@@ -120,7 +124,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             final updatedMusic = MusicModel(
               name: selectedMusic.name.contains('(cropped)')
                   ? selectedMusic.name
-                  : selectedMusic.name+'(cropped)', // Only append "(cropped)" if not already present
+                  : selectedMusic.name +
+                      '(cropped)', // Only append "(cropped)" if not already present
               url: outputPath,
               base64Data: base64String, // Include base64-encoded data
             );
@@ -148,8 +153,6 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
       );
     }
   }
-
-
 
   void _updateTimeFromText(bool isStart) {
     try {
@@ -190,9 +193,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
     if (isPlaying) {
       await _audioPlayer.pause();
     } else {
-      final fileUri = Uri.file(
-              ref.read(musicStateProvider).selectedMusic.url)
-          .toString();
+      final fileUri =
+          Uri.file(ref.read(musicStateProvider).selectedMusic.url).toString();
       await _audioPlayer.play(DeviceFileSource(fileUri));
       await _audioPlayer.seek(Duration(milliseconds: (start * 1000).toInt()));
     }
@@ -238,7 +240,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                   children: [
                     _buildWaveformDisplay(),
                     const SizedBox(height: 10),
-                    _buildTimeLabels(),
+                    TimeLabels(start: _formatTime(start), end: _formatTime(end),),
                     const SizedBox(height: 30),
                     _buildTimeControls(),
                   ],
@@ -251,31 +253,13 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  _buildActionButtons(),
+                  // _buildActionButtons(),
+                  ActionButtons(cropAndSaveAudio: _cropAndSaveAudio,),
                 ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTimeLabels() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            _formatTime(start),
-            style: const TextStyle(color: Colors.black54),
-          ),
-          Text(
-            _formatTime(end),
-            style: const TextStyle(color: Colors.black54),
-          ),
-        ],
       ),
     );
   }
@@ -362,7 +346,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
               });
             },
             child: Container(
-              width: 8,
+              width: 10,
               height: 70,
               color: Colors.black,
             ),
@@ -371,7 +355,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
         // End handle
         Positioned(
           left: ((end / totalDuration) * containerWidth) -
-              5, // Subtract handle width
+              10, // Subtract handle width
           child: GestureDetector(
             onHorizontalDragUpdate: (details) {
               setState(() {
@@ -382,7 +366,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
               });
             },
             child: Container(
-              width: 8,
+              width: 10,
               height: 70,
               color: Colors.black,
             ),
@@ -405,204 +389,24 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildTimeInput(
-                      'Start', _startController, true, isSmallScreen),
-                  _buildTimeInput('End', _endController, false, isSmallScreen),
+                  TimeInput(controller: _startController, label: 'Start', isStart: true, isSmallScreen: isSmallScreen, updateTimeFromText: _updateTimeFromText),
+                  TimeInput(controller: _endController, label: 'End', isStart: false, isSmallScreen: isSmallScreen, updateTimeFromText: _updateTimeFromText),
                   if (!isSmallScreen)
-                    _buildTimeDisplay('Duration', _formatTime(end - start)),
-                  if (!isSmallScreen) _buildPlaybackControls(),
+                    TimeDisplay(label: 'Duration',time:  _formatTime(end - start),),
+                  if (!isSmallScreen)
+                  Playbackcontrols(isPlaying: isPlaying, playPauseMusic: _playPauseMusic),
                 ],
               ),
               const SizedBox(height: 10),
               if (isSmallScreen)
-                _buildTimeDisplay('Duration', _formatTime(end - start)),
+                TimeDisplay(label: 'Duration',time:  _formatTime(end - start),),
               const SizedBox(height: 10),
-              if (isSmallScreen) _buildPlaybackControls(),
+              if (isSmallScreen) 
+              Playbackcontrols(isPlaying: isPlaying, playPauseMusic: _playPauseMusic)
             ],
           );
         },
       ),
     );
   }
-
-  Widget _buildTimeInput(String label, TextEditingController controller,
-      bool isStart, bool isSmallScreen) {
-    final double width =
-        isSmallScreen ? 50 : 70; // Adjust width for smaller screens
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Container(
-        width: width,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              '$label:',
-              style: const TextStyle(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            TextField(
-              controller: controller,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                ),
-              ),
-              onSubmitted: (_) => _updateTimeFromText(isStart),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimeDisplay(String label, String time) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '$label:',
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            time,
-            style: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlaybackControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: _playPauseMusic,
-          child: Row(
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) {
-                  return ScaleTransition(scale: animation, child: child);
-                },
-                child: Icon(
-                  isPlaying
-                      ? Icons.pause_circle_outline
-                      : Icons.play_circle_outline,
-                  key: ValueKey<bool>(isPlaying),
-                  size: 32, // Ensure consistent size
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(width: 5),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Text(
-                  !isPlaying ? 'Play' : 'Pause',
-                  key: ValueKey<bool>(isPlaying),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      spacing: 14,
-      children: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all(Colors.white),
-            fixedSize: MaterialStateProperty.all(Size(250, 45)),
-            maximumSize: MaterialStateProperty.all(
-                Size(MediaQuery.of(context).size.width / 3, 45)),
-            side: MaterialStateProperty.all(
-              BorderSide(
-                color: Colors.black,
-                width: 2,
-              ),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.arrow_back, color: Colors.grey[800]),
-              SizedBox(
-                width: 4,
-              ),
-              Text('Back',
-                  style: TextStyle(
-                    color: Colors.grey[800],
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                    fontFamily: 'Times New Roman',
-                  )),
-            ],
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () => _cropAndSaveAudio(),
-          style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all(Colors.grey[800]),
-            fixedSize: MaterialStateProperty.all(Size(250, 45)),
-            maximumSize: MaterialStateProperty.all(
-                Size(MediaQuery.of(context).size.width / 3, 45)),
-          ),
-          child: Text(
-            'Save',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
-
