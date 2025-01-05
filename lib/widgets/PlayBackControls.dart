@@ -35,7 +35,7 @@ class PlaybackControls extends StatelessWidget {
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: SizedBox(
-                  width: 50, // Fixed width to avoid layout shifts
+                  width: 46, // Fixed width to avoid layout shifts
                   child: Text(
                     isPlaying ? 'Pause' : 'Play',
                     key: ValueKey<bool>(isPlaying),

@@ -3,9 +3,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
-
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter/return_code.dart';
+import 'package:ffmpeg_kit_flutter_min/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_min/return_code.dart';
 
 import 'package:flutter/material.dart';
 
@@ -23,7 +22,7 @@ import 'package:template/widgets/time_input.dart';
 import 'package:template/widgets/time_labels.dart';
 
 class AudioCropperPage extends ConsumerStatefulWidget {
-  AudioCropperPage({super.key});
+  const AudioCropperPage({super.key});
 
   @override
   ConsumerState<AudioCropperPage> createState() => _AudioCropperPageState();
@@ -41,8 +40,8 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   double end = 300;
   bool isDraggingStart = false;
   bool isDraggingEnd = false;
-  double startDragX = 0;
   bool isDragging = false;
+  double dragStartPosition = 0;
 
   @override
   void initState() {
@@ -104,7 +103,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
 
       final directory = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '${directory.path}/cropped_${timestamp}.mp3';
+      final outputPath = '${directory.path}/cropped_$timestamp.mp3';
 
       // Ensure input file exists
       final inputFile = File(selectedMusic.url);
@@ -136,6 +135,10 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
               url: outputPath,
               base64Data: base64String, // Include base64-encoded data
             );
+
+            if(selectedMusic.name.contains('(cropped)')){
+              await File(selectedMusic.url).delete();
+              }// Delete safely without affecting the input file
 
             musicState.updateAudioPath(outputPath);
             musicState.updateSelectedMusic(updatedMusic);
@@ -200,17 +203,27 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
     if (isPlaying) {
       await _audioPlayer.pause();
     } else {
-      final fileUri =
-          Uri.file(ref.read(musicStateProvider).selectedMusic.url).toString();
+      final fileUri = Uri.file(ref.read(musicStateProvider).selectedMusic.url).toString();
       await _audioPlayer.play(DeviceFileSource(fileUri));
-      await _audioPlayer.seek(Duration(
-          milliseconds:
-              (!isDragging ? start * 1000 : startDragX >= currentTime?startDragX * 1000 : currentTime * 1000).toInt()));
+
+      // Calculate the correct playback position
+      double playbackPosition;
+      if (isDragging) {
+        // If dragging, use the drag position if it's within bounds
+        playbackPosition = dragStartPosition.clamp(start, end);
+      } else {
+        // If not dragging, use current position or start position
+        playbackPosition = currentTime >= start && currentTime <= end ?
+        currentTime : start;
+      }
+
+      await _audioPlayer.seek(Duration(milliseconds: (playbackPosition * 1000).toInt()));
     }
     setState(() {
       isPlaying = !isPlaying;
     });
   }
+
 
   String _formatTime(double time) {
     final seconds = time.toInt();
@@ -286,13 +299,15 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
         final tapPosition = details.localPosition.dx;
         final waveformWidth = context.size!.width - 32;
         final newTime = (tapPosition / waveformWidth) * totalDuration;
+        final clampedTime = newTime.clamp(0, totalDuration);
+
         setState(() {
-          currentTime = newTime.clamp(0, totalDuration);
-          _currentTimeNotifier.value = currentTime;
-          startDragX = currentTime;
-          isDragging = start <= startDragX && startDragX <= end;
-          _audioPlayer
-              .seek(Duration(milliseconds: (currentTime * 1000).toInt()));
+          currentTime = clampedTime.toDouble();
+          _currentTimeNotifier.value = clampedTime.toDouble();
+          dragStartPosition = clampedTime.toDouble();
+          // Only set isDragging if the tap is within the crop region
+          isDragging = clampedTime >= start && clampedTime <= end;
+          _audioPlayer.seek(Duration(milliseconds: (clampedTime * 1000).toInt()));
         });
       },
       child: Container(
@@ -326,11 +341,9 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
                 ValueListenableBuilder<double>(
                   valueListenable: _currentTimeNotifier,
                   builder: (context, currentTime, _) {
-                    final leftPosition =
-                        (currentTime / totalDuration) * waveformWidth;
+                    final leftPosition = (currentTime / totalDuration) * waveformWidth;
                     return Positioned(
-                      left: leftPosition.clamp(
-                          0, waveformWidth - 4), // Prevent overflow
+                      left: leftPosition.clamp(0, waveformWidth - 4),
                       child: Container(
                         width: 4,
                         height: 70,
@@ -375,17 +388,17 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
             behavior: HitTestBehavior.translucent,
             onHorizontalDragUpdate: (details) {
               setState(() {
-                final newStart = start +
-                    (details.primaryDelta! / containerWidth) * totalDuration;
+                final newStart = start + (details.primaryDelta! / containerWidth) * totalDuration;
                 start = newStart.clamp(0, end - 1);
                 _startController.text = _formatTime(start);
-                if(start>startDragX){
+                // Update dragging state if current position is now outside bounds
+                if (isDragging && dragStartPosition < start) {
                   isDragging = false;
                 }
               });
             },
             child: Container(
-              width: 10,
+              width: 14,
               height: 70,
               color: Colors.black,
             ),
@@ -393,23 +406,22 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
         ),
         // End handle
         Positioned(
-          left: ((end / totalDuration) * containerWidth) -
-              10, // Subtract handle width
+          left: ((end / totalDuration) * containerWidth) - 14,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onHorizontalDragUpdate: (details) {
               setState(() {
-                final newEnd = end +
-                    (details.primaryDelta! / containerWidth) * totalDuration;
+                final newEnd = end + (details.primaryDelta! / containerWidth) * totalDuration;
                 end = newEnd.clamp(start + 1, totalDuration);
                 _endController.text = _formatTime(end);
-                if(startDragX>end){
+                // Update dragging state if current position is now outside bounds
+                if (isDragging && dragStartPosition > end) {
                   isDragging = false;
                 }
               });
             },
             child: Container(
-              width: 10,
+              width: 14,
               height: 70,
               color: Colors.black,
             ),
