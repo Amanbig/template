@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/return_code.dart';
 
 import 'package:flutter/material.dart';
 
@@ -10,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:template/models/MusicModel.dart';
-import 'package:template/models/music_provider.dart';
+import 'package:template/provider/music_provider.dart';
 
 import 'package:template/widgets/waveform_painter.dart';
 import 'package:template/widgets/PlayBackControls.dart';
@@ -87,6 +89,7 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
     }
   }
 
+
   void _cropAndSaveAudio() async {
     try {
       final musicState = ref.read(musicStateProvider.notifier);
@@ -99,74 +102,86 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
         return;
       }
 
-      final processingPlayer = AudioPlayer();
-      final sourceFile = File(selectedMusic.url);
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputPath = '${directory.path}/cropped_${timestamp}.mp3';
 
-      if (!await sourceFile.exists()) {
+      // Ensure input file exists
+      final inputFile = File(selectedMusic.url);
+      if (!await inputFile.exists()) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Input file not found')),
         );
         return;
       }
 
-      // Create output path
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '${directory.path}/cropped_$timestamp.mp3';
+      // Escape paths and parameters for compatibility
+      final escapedInputPath = selectedMusic.url.replaceAll('"', '\\"'); // Escape double quotes in input path
+      final escapedOutputPath = outputPath.replaceAll('"', '\\"'); // Escape double quotes in output path
 
-      // Create a new AudioPlayer instance for processing
-      await processingPlayer.setSourceDeviceFile(selectedMusic.url);
+      // Construct FFmpeg command with properly escaped paths
+      final command = '-i "$escapedInputPath" -ss $start -to $end -c copy "$escapedOutputPath"';
 
-      // Set up audio manipulation
-      await processingPlayer.setReleaseMode(ReleaseMode.stop);
-      await processingPlayer.seek(Duration(milliseconds: (start * 1000).toInt()));
+      print('FFmpeg Command: $command'); // For debugging
 
-      // Create a new file for the cropped audio
-      final outputFile = File(outputPath);
-      final inputBytes = await sourceFile.readAsBytes();
+      // Execute FFmpeg command
+      await FFmpegKit.execute(command).then((session) async {
+        final returnCode = await session.getReturnCode();
 
-      // Calculate byte positions for cropping
-      final bytesPerSecond = inputBytes.length / totalDuration;
-      final startByte = (start * bytesPerSecond).round();
-      final endByte = (end * bytesPerSecond).round();
+        if (ReturnCode.isSuccess(returnCode)) {
+          final outputFile = File(outputPath);
+          if (await outputFile.exists()) {
+            final bytes = await outputFile.readAsBytes();
+            final base64String = base64Encode(bytes);
 
-      // Extract the cropped portion
-      final croppedBytes = inputBytes.sublist(startByte, endByte);
-      await outputFile.writeAsBytes(croppedBytes);
+            final updatedMusic = MusicModel(
+              name: selectedMusic.name.contains('(cropped)')
+                  ? selectedMusic.name
+                  : selectedMusic.name + '(cropped)', // Only append "(cropped)" if not already present
+              url: outputPath,
+              base64Data: base64String, // Include base64-encoded data
+            );
 
-      // Create new music model
-      final base64String = base64Encode(croppedBytes);
-      final updatedMusic = MusicModel(
-        name: selectedMusic.name.contains('(cropped)')
-            ? selectedMusic.name
-            : '${selectedMusic.name}(cropped)',
-        url: outputPath,
-        base64Data: base64String,
-      );
+            // Delete original file only if it contains '(cropped)' to avoid accidental deletion
+            if (selectedMusic.name.contains('(cropped)')) {
+              await File(selectedMusic.url).delete();
+            }
 
-      // Clean up old cropped file if exists
-      if (selectedMusic.name.contains('(cropped)')) {
-        await File(selectedMusic.url).delete();
-      }
+            // Update music state
+            musicState.updateAudioPath(outputPath);
+            musicState.updateSelectedMusic(updatedMusic);
+            musicState.addMusic(updatedMusic);
 
-      // Update state
-      musicState.updateAudioPath(outputPath);
-      musicState.updateSelectedMusic(updatedMusic);
-      musicState.addMusic(updatedMusic);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Audio cropped successfully')),
+            );
 
-      await processingPlayer.dispose();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Audio cropped successfully')),
-      );
-
-      Navigator.pop(context);
+            Navigator.pop(context);
+          } else {
+            throw Exception('Output file not created');
+          }
+        } else {
+          final logs = await session.getLogsAsString();
+          throw Exception('FFmpeg failed: $logs');
+        }
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   }
+
+
+
+
+
+
+
+
+
+
+
 
   void _updateTimeFromText(bool isStart) {
     try {
@@ -192,15 +207,6 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
         _endController.text = _formatTime(end);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _audioPlayer.dispose();
-    _currentTimeNotifier.dispose();
-    _startController.dispose();
-    _endController.dispose();
-    super.dispose();
   }
 
   void _playPauseMusic() async {
@@ -232,6 +238,16 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   String _formatTime(double time) {
     final seconds = time.toInt();
     return seconds.toString();
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.stop();
+    _audioPlayer.dispose();
+    _currentTimeNotifier.dispose();
+    _startController.dispose();
+    _endController.dispose();
+    super.dispose();
   }
 
   @override

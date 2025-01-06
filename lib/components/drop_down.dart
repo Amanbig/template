@@ -1,14 +1,17 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:template/models/MusicModel.dart';
-import 'package:template/models/music_provider.dart';
+import 'package:template/provider/music_provider.dart';
 
 class DropDown extends ConsumerWidget {
-  const DropDown({Key? key}) : super(key: key);
+  DropDown({Key? key}) : super(key: key);
+
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   String _generateRandomFileName() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -89,14 +92,6 @@ class DropDown extends ConsumerWidget {
         height: 55,
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              spreadRadius: 3,
-              blurRadius: 3,
-              offset: const Offset(0, 3),
-            ),
-          ],
           border: Border.all(color: Colors.grey, width: 1.0),
           borderRadius: BorderRadius.circular(2),
         ),
@@ -116,8 +111,8 @@ class DropDown extends ConsumerWidget {
               ),
             ),
             Icon(
-              musicState.isDropdownVisible 
-                ? Icons.keyboard_arrow_up 
+              musicState.isDropdownVisible
+                ? Icons.keyboard_arrow_up
                 : Icons.keyboard_arrow_down,
             ),
           ],
@@ -131,63 +126,74 @@ class DropDown extends ConsumerWidget {
       margin: const EdgeInsets.only(top: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            spreadRadius: 3,
-            blurRadius: 3,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: Colors.grey, width: 1.0),
         borderRadius: BorderRadius.circular(5),
       ),
       child: SizedBox(
-        height: 350,
-        child: ListView.builder(
-          itemCount: musicState.musicList.length,
-          itemBuilder: (context, index) {
-            final item = musicState.musicList[index];
-            return TextButton(
-              onPressed: () async {
-                if (index == 0) {
-                  await _pickFile(ref);
-                } else {
-                  ref.read(musicStateProvider.notifier)
-                    ..updateSelectedMusic(item)
-                    ..toggleDropdownVisibility();
-                }
-              },
-              child: Row(
-                children: [
-                  Icon(
-                    index == 0
-                      ? Icons.file_upload_outlined
-                      : Icons.play_circle_outlined,
-                    color: Colors.black,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      style: TextStyle(
-                        color: index == 0 ? Colors.green : Colors.black,
-                        fontSize: 18,
-                        decoration: index == 0
-                          ? TextDecoration.underline
-                          : TextDecoration.none,
-                        decorationColor:
-                            index == 0 ? Colors.green : Colors.transparent,
+        height: 300, // Adjusted height of the dropdown list container
+        child: Theme(
+          data: ThemeData(
+            scrollbarTheme: ScrollbarThemeData(
+              thumbColor: MaterialStateProperty.all(Colors.purple), // Set the thumb color to purple
+              trackColor: MaterialStateProperty.all(Colors.transparent), // Optional: customize track color
+              thickness: MaterialStateProperty.all(6.0), // Make the scrollbar thinner
+              radius: Radius.circular(10), // Optional: Round the corners of the scrollbar
+              mainAxisMargin: 2, // Optional: Decrease the margin between scrollbar and content
+              crossAxisMargin: 10,
+            ),
+          ),
+          child: Scrollbar(
+            thumbVisibility: true, // This makes the scrollbar visible when you scroll
+            child: ListView.builder(
+              itemCount: musicState.musicList.length,
+              itemBuilder: (context, index) {
+                final item = musicState.musicList[index];
+                return TextButton(
+                  onPressed: () async {
+                    if (index == 0) {
+                      await _pickFile(ref);
+                    } else {
+                      ref.read(musicStateProvider.notifier)
+                        ..updateSelectedMusic(item)
+                        ..toggleDropdownVisibility();
+                    }
+                  },
+                  child: Row(
+                    mainAxisAlignment: index == 0 ? MainAxisAlignment.center : MainAxisAlignment.start,
+                    children: [
+                      Icon(
+                        index == 0
+                            ? Icons.file_upload_outlined
+                            : Icons.play_circle_outlined,
+                        color: Colors.purple,
+                        size: 32,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 8),
+                      Text(
+                        item.name,
+                        style: TextStyle(
+                          color: index == 0 ? Colors.purple : Colors.black,
+                          fontSize: 18,
+                          decoration: index == 0
+                              ? TextDecoration.underline
+                              : TextDecoration.none,
+                          decorationColor:
+                          index == 0 ? Colors.purple : Colors.transparent,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
   }
+
+
+
+
 }

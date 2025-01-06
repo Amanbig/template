@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:template/models/music_provider.dart';
+import 'package:template/provider/music_provider.dart';
 import 'package:template/pages/crop_page.dart';
 
 class HomePageButtons extends ConsumerWidget {

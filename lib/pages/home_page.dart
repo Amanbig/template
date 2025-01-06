@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:template/components/drop_down.dart';
 import 'package:template/components/home_page_buttons.dart';
 // Import your MusicModel class
-import 'package:template/models/music_provider.dart';
+import 'package:template/provider/music_provider.dart';
 
 class HomePage extends ConsumerWidget {
   HomePage({super.key});
@@ -17,7 +17,7 @@ class HomePage extends ConsumerWidget {
     final isDropdownVisible = ref.watch(musicStateProvider.select((state) => state.isDropdownVisible));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
           title: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -26,7 +26,7 @@ class HomePage extends ConsumerWidget {
               children: [
                 Icon(Icons.arrow_back,size: 32,),
                 Text(
-                  'Video Music Details',
+                  'Music Details',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 24,
@@ -41,7 +41,7 @@ class HomePage extends ConsumerWidget {
               ],
             ),
           ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.grey[100],
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -61,13 +61,13 @@ class HomePage extends ConsumerWidget {
                     spacing: 25,
                     children: [
                       Text(
-                        'Total Video Duration: 3:45',
+                        'Video Music details',
                         style: TextStyle(
                           fontSize: 18,
                         ),
                       ),
                       Text(
-                        'Total Music Duration: 3:45',
+                        'Total Video Duration: 89Sec',
                         style: TextStyle(
                           fontSize: 18,
                         ),
