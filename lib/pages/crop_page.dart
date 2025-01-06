@@ -436,54 +436,51 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
   }
 
   Widget _buildTimeControls() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmallScreen = constraints.maxWidth < 300;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 300;
 
-          return Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  TimeInput(
-                      controller: _startController,
-                      label: 'Start',
-                      isStart: true,
-                      isSmallScreen: isSmallScreen,
-                      updateTimeFromText: _updateTimeFromText),
-                  TimeInput(
-                      controller: _endController,
-                      label: 'End',
-                      isStart: false,
-                      isSmallScreen: isSmallScreen,
-                      updateTimeFromText: _updateTimeFromText),
-                  if (!isSmallScreen)
-                    TimeDisplay(
-                      label: 'Duration',
-                      time: _formatTime(end - start),
-                    ),
-                  if (!isSmallScreen)
-                    PlaybackControls(
-                        isPlaying: isPlaying, playPauseMusic: _playPauseMusic),
-                ],
+        return Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TimeInput(
+                    controller: _startController,
+                    label: 'Start',
+                    isStart: true,
+                    isSmallScreen: isSmallScreen,
+                    updateTimeFromText: _updateTimeFromText),
+                TimeInput(
+                    controller: _endController,
+                    label: 'End',
+                    isStart: false,
+                    isSmallScreen: isSmallScreen,
+                    updateTimeFromText: _updateTimeFromText),
+                if (!isSmallScreen)
+                  TimeDisplay(
+                    label: 'Duration',
+                    time: _formatTime(end - start),
+                  ),
+                if (!isSmallScreen)
+                  PlaybackControls(
+                      isPlaying: isPlaying, playPauseMusic: _playPauseMusic),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (isSmallScreen)
+              TimeDisplay(
+                label: 'Duration',
+                time: _formatTime(end - start),
               ),
-              const SizedBox(height: 10),
-              if (isSmallScreen)
-                TimeDisplay(
-                  label: 'Duration',
-                  time: _formatTime(end - start),
-                ),
-              const SizedBox(height: 10),
-              if (isSmallScreen)
-                PlaybackControls(
-                    isPlaying: isPlaying, playPauseMusic: _playPauseMusic)
-            ],
-          );
-        },
-      ),
+            const SizedBox(height: 10),
+            if (isSmallScreen)
+              PlaybackControls(
+                  isPlaying: isPlaying, playPauseMusic: _playPauseMusic)
+          ],
+        );
+      },
     );
   }
 }
