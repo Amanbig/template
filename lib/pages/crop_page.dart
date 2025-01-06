@@ -3,8 +3,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:ffmpeg_kit_flutter_min/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_min/return_code.dart';
 
 import 'package:flutter/material.dart';
 
@@ -101,62 +99,68 @@ class _AudioCropperPageState extends ConsumerState<AudioCropperPage> {
         return;
       }
 
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '${directory.path}/cropped_$timestamp.mp3';
+      final processingPlayer = AudioPlayer();
+      final sourceFile = File(selectedMusic.url);
 
-      // Ensure input file exists
-      final inputFile = File(selectedMusic.url);
-      if (!await inputFile.exists()) {
+      if (!await sourceFile.exists()) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Input file not found')),
         );
         return;
       }
 
-      // Create FFmpeg command with escaped paths
-      final command = '-i "${selectedMusic.url.replaceAll('"', '\\"')}" -ss $start -to $end -c copy "$outputPath"';
+      // Create output path
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputPath = '${directory.path}/cropped_$timestamp.mp3';
 
+      // Create a new AudioPlayer instance for processing
+      await processingPlayer.setSourceDeviceFile(selectedMusic.url);
 
-      await FFmpegKit.execute(command).then((session) async {
-        final returnCode = await session.getReturnCode();
+      // Set up audio manipulation
+      await processingPlayer.setReleaseMode(ReleaseMode.stop);
+      await processingPlayer.seek(Duration(milliseconds: (start * 1000).toInt()));
 
-        if (ReturnCode.isSuccess(returnCode)) {
-          final outputFile = File(outputPath);
-          if (await outputFile.exists()) {
-            final bytes = await outputFile.readAsBytes();
-            final base64String = base64Encode(bytes);
+      // Create a new file for the cropped audio
+      final outputFile = File(outputPath);
+      final inputBytes = await sourceFile.readAsBytes();
 
-            final updatedMusic = MusicModel(
-              name: selectedMusic.name.contains('(cropped)')
-                  ? selectedMusic.name
-                  : selectedMusic.name +
-                      '(cropped)', // Only append "(cropped)" if not already present
-              url: outputPath,
-              base64Data: base64String, // Include base64-encoded data
-            );
+      // Calculate byte positions for cropping
+      final bytesPerSecond = inputBytes.length / totalDuration;
+      final startByte = (start * bytesPerSecond).round();
+      final endByte = (end * bytesPerSecond).round();
 
-            if(selectedMusic.name.contains('(cropped)')){
-              await File(selectedMusic.url).delete();
-              }// Delete safely without affecting the input file
+      // Extract the cropped portion
+      final croppedBytes = inputBytes.sublist(startByte, endByte);
+      await outputFile.writeAsBytes(croppedBytes);
 
-            musicState.updateAudioPath(outputPath);
-            musicState.updateSelectedMusic(updatedMusic);
-            musicState.addMusic(updatedMusic);
+      // Create new music model
+      final base64String = base64Encode(croppedBytes);
+      final updatedMusic = MusicModel(
+        name: selectedMusic.name.contains('(cropped)')
+            ? selectedMusic.name
+            : '${selectedMusic.name}(cropped)',
+        url: outputPath,
+        base64Data: base64String,
+      );
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Audio cropped successfully')),
-            );
+      // Clean up old cropped file if exists
+      if (selectedMusic.name.contains('(cropped)')) {
+        await File(selectedMusic.url).delete();
+      }
 
-            Navigator.pop(context);
-          } else {
-            throw Exception('Output file not created');
-          }
-        } else {
-          final logs = await session.getLogsAsString();
-          throw Exception('FFmpeg failed: $logs');
-        }
-      });
+      // Update state
+      musicState.updateAudioPath(outputPath);
+      musicState.updateSelectedMusic(updatedMusic);
+      musicState.addMusic(updatedMusic);
+
+      await processingPlayer.dispose();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Audio cropped successfully')),
+      );
+
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
